@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   Container,
   Typography,
@@ -15,11 +15,12 @@ import {
   Grid,
   Card,
   CardContent,
-  Stack,
   Divider,
 } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import axios from "axios";
+import { jsPDF } from "jspdf";
 
 // Card Component
 const StudentCard = ({ title, student, color = "primary.main" }) => (
@@ -85,6 +86,34 @@ const Home = () => {
     }
   };
 
+  const downloadPdf = () => {
+    if (!report?.summary) return;
+
+    const pdf = new jsPDF();
+    const margin = 10;
+    const lineHeight = 7;
+    const pageHeight = pdf.internal.pageSize.height;
+
+    const lines = pdf.splitTextToSize(report.summary, 180);
+    let y = margin;
+
+    pdf.setFontSize(16);
+    pdf.text("Student Performance Summary", margin, y);
+    y += 10;
+
+    pdf.setFontSize(12);
+    lines.forEach((line) => {
+      if (y + lineHeight > pageHeight - margin) {
+        pdf.addPage();
+        y = margin;
+      }
+      pdf.text(line, margin, y);
+      y += lineHeight;
+    });
+
+    pdf.save("student-summary.pdf");
+  };
+
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 6 }}>
       <Typography variant="h4" gutterBottom fontWeight="bold">
@@ -120,6 +149,17 @@ const Home = () => {
         >
           {loading ? <CircularProgress size={24} color="inherit" /> : "Submit"}
         </Button>
+
+        {report && (
+          <Button
+            variant="contained"
+            color="error"
+            startIcon={<PictureAsPdfIcon />}
+            onClick={downloadPdf}
+          >
+            Download Summary PDF
+          </Button>
+        )}
       </Box>
 
       {report && (
@@ -187,9 +227,7 @@ const Home = () => {
             <Table stickyHeader>
               <TableHead>
                 <TableRow>
-                  <TableCell>
-                    <strong>Name</strong>
-                  </TableCell>
+                  <TableCell><strong>Name</strong></TableCell>
                   <TableCell>Hindi</TableCell>
                   <TableCell>English</TableCell>
                   <TableCell>Math</TableCell>
