@@ -1,397 +1,333 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import {
-    Container,
-    Typography,
-    Button,
-    Box,
-    Paper,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    CircularProgress,
-    Grid,
-    Card,
-    CardContent,
-    Divider,
+  Container,
+  Typography,
+  Button,
+  Box,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  CircularProgress,
+  Grid,
+  Card,
+  CardContent,
+  Divider,
+  TextField,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
+import AddIcon from "@mui/icons-material/Add";
 import axios from "axios";
 import { jsPDF } from "jspdf";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-// Card Component
+// Card Component for Student Info
 const StudentCard = ({ title, student, color = "primary.main" }) => (
-    <Card
-        variant="outlined"
-        sx={{
-            minWidth: 250,
-            borderLeft: `6px solid`,
-            borderColor: color,
-            boxShadow: 1,
-        }}
-    >
-        <CardContent>
-            <Typography variant="h6" gutterBottom color="text.primary">
-                {title}
-            </Typography>
-            <Typography>
-                <strong>Name:</strong> {student.Name}
-            </Typography>
-            <Typography>
-                <strong>Total:</strong> {student.Total}
-            </Typography>
-            <Typography>
-                <strong>Percentage:</strong> {student.Percentage}%
-            </Typography>
-            <Typography variant="body2" color="text.secondary" mt={1}>
-                H: {student.Hindi}, E: {student.English}, M: {student.Math}, S:{" "}
-                {student.Science}, SST: {student.SST}
-            </Typography>
-        </CardContent>
-    </Card>
+  <Card
+    variant="outlined"
+    sx={{
+      minWidth: 250,
+      borderLeft: `6px solid`,
+      borderColor: color,
+      boxShadow: 1,
+    }}
+  >
+    <CardContent>
+      <Typography variant="h6" gutterBottom>
+        {title}
+      </Typography>
+      <Typography>
+        <strong>Name:</strong> {student.name}
+      </Typography>
+      <Typography>
+        <strong>Total:</strong> {student.total}
+      </Typography>
+      <Typography>
+        <strong>Percentage:</strong> {student.percentage}%
+      </Typography>
+    </CardContent>
+  </Card>
 );
 
 const Home = () => {
-    const [file, setFile] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [report, setReport] = useState(null);
+  const [file, setFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [report, setReport] = useState(null);
+  const [examName, setExamName] = useState("");
+  const [subjects, setSubjects] = useState([
+    { name: "", maxMarks: "", topics: "" },
+  ]);
+  const [showError, setShowError] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
-    // New states for toggling sections
-    const [showTopper, setShowTopper] = useState(true);
-    const [showTop3, setShowTop3] = useState(true);
-    const [showBottom3, setShowBottom3] = useState(true);
+  const handleFileChange = (e) => setFile(e.target.files[0]);
 
-    const handleFileChange = (e) => {
-        setFile(e.target.files[0]);
-    };
+  const handleSubjectChange = (index, field, value) => {
+    const updated = [...subjects];
+    updated[index][field] = value;
+    setSubjects(updated);
+  };
 
-    const handleSubmit = async () => {
-        if (!file) return alert("Please select a file.");
-        const formData = new FormData();
-        formData.append("file", file);
-        setLoading(true);
+  const addSubject = () => {
+    setSubjects([...subjects, { name: "", maxMarks: "", topics: "" }]);
+  };
 
-        try {
-            const response = await axios.post(
-                "https://school-ai-be-1.onrender.com/upload",
-                formData,
-                {
-                    headers: { "Content-Type": "multipart/form-data" },
-                }
-            );
-            setReport(response.data);
-        } catch (error) {
-            console.error("Upload failed:", error);
-            alert("Upload failed!");
-        } finally {
-            setLoading(false);
-        }
-    };
+  const handleSubmit = async () => {
+    if (!file || !examName || subjects.some((s) => !s.name || !s.maxMarks)) {
+      setErrorMsg("Please fill all fields including subject names and marks.");
+      setShowError(true);
+      return;
+    }
 
-    const generatePdf = useCallback((title, content) => {
-        const pdf = new jsPDF();
-        const margin = 10;
-        const lineHeight = 7;
-        const pageHeight = pdf.internal.pageSize.height;
+    const subjectsInfo = {};
+    subjects.forEach((s) => {
+      subjectsInfo[s.name] = {
+        maxMarks: Number(s.maxMarks),
+        topics: s.topics.split(",").map((t) => t.trim()),
+      };
+    });
 
-        let y = margin;
+    const formData = new FormData();
+    formData.append("file", file); // Ensure backend uses .single("file")
+    formData.append("examName", examName);
+    formData.append("subjectsInfo", JSON.stringify(subjectsInfo));
 
-        pdf.setFontSize(16);
-        pdf.text(title, margin, y);
-        y += 10;
+    setLoading(true);
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/upload",
+        formData
+      );
+      setReport(response.data);
+      console.log(response, "resonse");
+    } catch (error) {
+      const err =
+        error?.response?.data?.error || "Something went wrong during upload.";
+      setErrorMsg(err);
+      setShowError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        pdf.setFontSize(12);
-        const lines = pdf.splitTextToSize(content, 180);
-        lines.forEach((line) => {
-            if (y + lineHeight > pageHeight - margin) {
-                pdf.addPage();
-                y = margin;
-            }
-            pdf.text(line, margin, y);
-            y += lineHeight;
-        });
-        return pdf;
-    }, []);
+  const generatePdf = useCallback((title, content) => {
+    const pdf = new jsPDF();
+    const margin = 10;
+    const lineHeight = 7;
+    let y = margin;
 
-    const downloadTopperPdf = () => {
-        if (!report?.topper) return;
-        const content = `Name: ${report.topper.Name}\nTotal: ${report.topper.Total}\nPercentage: ${report.topper.Percentage}%\nHindi: ${report.topper.Hindi}, English: ${report.topper.English}, Math: ${report.topper.Math}, Science: ${report.topper.Science}, SST: ${report.topper.SST}`;
-        const pdf = generatePdf("Topper Details", content);
-        pdf.save("topper.pdf");
-    };
+    pdf.setFontSize(16);
+    pdf.text(title, margin, y);
+    y += 10;
 
-    const downloadTop3Pdf = () => {
-        if (!report?.top3) return;
-        let content = "";
-        report.top3.forEach((student, index) => {
-            content += `Rank ${index + 1}:\nName: ${student.Name}\nTotal: ${student.Total}\nPercentage: ${student.Percentage}%\nHindi: ${student.Hindi}, English: ${student.English}, Math: ${student.Math}, Science: ${student.Science}, SST: ${student.SST}\n\n`;
-        });
-        const pdf = generatePdf("Top 3 Students", content);
-        pdf.save("top3.pdf");
-    };
+    pdf.setFontSize(12);
+    const lines = pdf.splitTextToSize(content, 180);
+    lines.forEach((line) => {
+      if (y + lineHeight > pdf.internal.pageSize.height - margin) {
+        pdf.addPage();
+        y = margin;
+      }
+      pdf.text(line, margin, y);
+      y += lineHeight;
+    });
 
-    const downloadBottom3Pdf = () => {
-        if (!report?.bottom3) return;
-        let content = "";
-        report.bottom3.forEach((student, index) => {
-            content += `Bottom ${index + 1}:\nName: ${student.Name}\nTotal: ${student.Total}\nPercentage: ${student.Percentage}%\nHindi: ${student.Hindi}, English: ${student.English}, Math: ${student.Math}, Science: ${student.Science}, SST: ${student.SST}\n\n`;
-        });
-        const pdf = generatePdf("Bottom 3 Students", content);
-        pdf.save("bottom3.pdf");
-    };
+    return pdf;
+  }, []);
 
-    // Prepare data for the chart
-    const chartData = report?.students.map(student => ({
-        name: student.Name,
-        Hindi: student.Hindi,
-        English: student.English,
-        Math: student.Math,
-        Science: student.Science,
-        SST: student.SST,
-    })) || [];
+  const downloadSummaryPdf = () => {
+    const pdf = generatePdf("Student Performance Summary", report.summary);
+    pdf.save("student-summary.pdf");
+  };
 
-    return (
-        <Container maxWidth="lg" sx={{ mt: 4, mb: 6 }}>
-            <Typography variant="h4" gutterBottom fontWeight="bold">
-                📊 Upload Student Performance Excel
-            </Typography>
+  return (
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 6 }}>
+      <Typography variant="h4" gutterBottom>
+        📘 Upload Exam Report
+      </Typography>
 
-            <Box display="flex" flexWrap="wrap" gap={2} mb={4} alignItems="center">
-                <Button
-                    variant="contained"
-                    component="label"
-                    startIcon={<CloudUploadIcon />}
-                >
-                    Choose File
-                    <input
-                        type="file"
-                        hidden
-                        accept=".xlsx, .xls"
-                        onChange={handleFileChange}
-                    />
-                </Button>
+      {/* Exam & Subject Details */}
+      <Box mb={4}>
+        <TextField
+          label="Exam Name"
+          fullWidth
+          value={examName}
+          onChange={(e) => setExamName(e.target.value)}
+          sx={{ mb: 2 }}
+        />
+        {subjects.map((subj, i) => (
+          <Box key={i} display="flex" gap={2} mb={1}>
+            <TextField
+              label="Subject Name"
+              value={subj.name}
+              onChange={(e) => handleSubjectChange(i, "name", e.target.value)}
+            />
+            <TextField
+              label="Max Marks"
+              type="number"
+              value={subj.maxMarks}
+              onChange={(e) =>
+                handleSubjectChange(i, "maxMarks", e.target.value)
+              }
+            />
+            <TextField
+              label="Topics (comma separated)"
+              fullWidth
+              value={subj.topics}
+              onChange={(e) => handleSubjectChange(i, "topics", e.target.value)}
+            />
+          </Box>
+        ))}
+        <Button
+          onClick={addSubject}
+          startIcon={<AddIcon />}
+          variant="outlined"
+          sx={{ mt: 1 }}
+        >
+          Add Subject
+        </Button>
+      </Box>
 
-                {file && (
-                    <Typography variant="body1" color="text.secondary">
-                        {file.name}
-                    </Typography>
-                )}
+      {/* File Upload */}
+      <Box display="flex" alignItems="center" gap={2} mb={4}>
+        <Button
+          variant="contained"
+          component="label"
+          startIcon={<CloudUploadIcon />}
+        >
+          Choose File
+          <input
+            type="file"
+            hidden
+            accept=".xlsx,.xls"
+            onChange={handleFileChange}
+          />
+        </Button>
+        {file && <Typography>{file.name}</Typography>}
+        <Button
+          variant="contained"
+          color="success"
+          onClick={handleSubmit}
+          disabled={!file || loading}
+        >
+          {loading ? <CircularProgress size={24} color="inherit" /> : "Submit"}
+        </Button>
+      </Box>
 
-                <Button
-                    variant="contained"
-                    color="success"
-                    onClick={handleSubmit}
-                    disabled={!file || loading}
-                >
-                    {loading ? <CircularProgress size={24} color="inherit" /> : "Submit"}
-                </Button>
+      {/* Summary & Result Section */}
+      {report && (
+        <>
+          <Divider sx={{ my: 3 }} />
+          <Typography variant="h5">📋 Summary</Typography>
+          <Paper
+            variant="outlined"
+            sx={{ p: 2, mt: 1, whiteSpace: "pre-wrap", bgcolor: "#f5f5f5" }}
+          >
+            {report.summary}
+          </Paper>
+          <Button
+            variant="contained"
+            color="error"
+            startIcon={<PictureAsPdfIcon />}
+            onClick={downloadSummaryPdf}
+            sx={{ mt: 2 }}
+          >
+            Download Summary PDF
+          </Button>
 
-                {report && (
-                    <Button
-                        variant="contained"
-                        color="error"
-                        startIcon={<PictureAsPdfIcon />}
-                        onClick={() => {
-                            const pdf = generatePdf("Student Performance Summary", report.summary);
-                            pdf.save("student-summary.pdf");
-                        }}
-                    >
-                        Download Summary PDF
-                    </Button>
-                )}
-            </Box>
+          {/* Topper */}
+          <Divider textAlign="left" sx={{ mt: 5, mb: 2 }}>
+            <Typography variant="h5">🏆 Topper</Typography>
+          </Divider>
+          <StudentCard title="Topper" student={report.topper} color="gold" />
 
-            {report && (
-                <>
-                    {/* Toggle buttons */}
-                    <Box display="flex" flexWrap="wrap" gap={2} mb={4}>
-                        <Button
-                            variant="outlined"
-                            onClick={() => setShowTopper(!showTopper)}
-                        >
-                            {showTopper ? "Hide" : "Show"} Topper
-                        </Button>
-                        <Button variant="outlined" onClick={() => setShowTop3(!showTop3)}>
-                            {showTop3 ? "Hide" : "Show"} Top 3
-                        </Button>
-                        <Button
-                            variant="outlined"
-                            onClick={() => setShowBottom3(!showBottom3)}
-                        >
-                            {showBottom3 ? "Hide" : "Show"} Bottom 3
-                        </Button>
-                    </Box>
+          {/* Top 3 */}
+          <Divider textAlign="left" sx={{ mt: 5, mb: 2 }}>
+            <Typography variant="h5">🥇 Top 3 Students</Typography>
+          </Divider>
+          <Grid container spacing={2}>
+            {report.top3.map((student, idx) => (
+              <Grid item key={idx} xs={12} sm={6} md={4}>
+                <StudentCard title={`Rank ${idx + 1}`} student={student} />
+              </Grid>
+            ))}
+          </Grid>
 
-                    {/* Summary */}
-                    <Divider textAlign="left" sx={{ mb: 2 }}>
-                        <Typography variant="h5">📋 Summary</Typography>
-                    </Divider>
-                    <Paper
-                        variant="outlined"
-                        sx={{
-                            p: 2,
-                            whiteSpace: "pre-wrap",
-                            bgcolor: "#f9f9f9",
-                            maxHeight: 300,
-                            overflow: "auto",
-                        }}
-                    >
-                        {report.summary}
-                    </Paper>
+          {/* Bottom 3 */}
+          <Divider textAlign="left" sx={{ mt: 5, mb: 2 }}>
+            <Typography variant="h5">📉 Bottom 3 Students</Typography>
+          </Divider>
+          <Grid container spacing={2}>
+            {report.bottom3.map((student, idx) => (
+              <Grid item key={idx} xs={12} sm={6} md={4}>
+                <StudentCard
+                  title={`Bottom ${idx + 1}`}
+                  student={student}
+                  color="error.main"
+                />
+              </Grid>
+            ))}
+          </Grid>
 
-                    {/* Topper */}
-                    {showTopper && (
-                        <>
-                            <Divider textAlign="left" sx={{ mt: 5, mb: 2 }}>
-                                <Typography variant="h5">🏆 Topper</Typography>
-                            </Divider>
-                            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                                <StudentCard
-                                    title="Top Student"
-                                    student={report.topper}
-                                    color="gold"
-                                />
-                                <Button
-                                    variant="contained"
-                                    color="error"
-                                    startIcon={<PictureAsPdfIcon />}
-                                    onClick={downloadTopperPdf}
-                                >
-                                    Download Topper PDF
-                                </Button>
-                            </Box>
-                        </>
-                    )}
+          {/* All Students Table */}
+          <Divider textAlign="left" sx={{ mt: 5, mb: 2 }}>
+            <Typography variant="h5">👥 All Students</Typography>
+          </Divider>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>
+                    <strong>Name</strong>
+                  </TableCell>
+                  {/* {report?.subjectKeys?.map((subject, idx) => (
+                    <TableCell key={idx}>{subject}</TableCell>
+                  ))} */}
+                  <TableCell>Total</TableCell>
+                  <TableCell>Percentage</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {report.students.map((student, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{student.Name}</TableCell>
+                    {/* {report.subjectK.map((subject, idx) => (
+                      <TableCell key={idx}>{student[subject]}</TableCell>
+                    ))} */}
+                    <TableCell>{student.Total}</TableCell>
+                    <TableCell>{student.Percentage}%</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </>
+      )}
 
-                    {/* Top 3 */}
-                    {showTop3 && (
-                        <>
-                            <Divider textAlign="left" sx={{ mt: 5, mb: 2 }}>
-                                <Typography variant="h5">🥇 Top 3 Students</Typography>
-                            </Divider>
-                            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                                <Typography variant="h6">Top 3 Students</Typography>
-                                <Button
-                                    variant="contained"
-                                    color="error"
-                                    startIcon={<PictureAsPdfIcon />}
-                                    onClick={downloadTop3Pdf}
-                                >
-                                    Download Top 3 PDF
-                                </Button>
-                            </Box>
-                            <Grid container spacing={2}>
-                                {report.top3.map((student, idx) => (
-                                    <Grid item key={idx} xs={12} sm={6} md={4}>
-                                        <StudentCard
-                                            title={`Rank ${idx + 1}`}
-                                            student={student}
-                                        />
-                                    </Grid>
-                                ))}
-                            </Grid>
-                        </>
-                    )}
-
-                    {/* Bottom 3 */}
-                    {showBottom3 && (
-                        <>
-                            <Divider textAlign="left" sx={{ mt: 5, mb: 2 }}>
-                                <Typography variant="h5">📉 Bottom 3 Students</Typography>
-                            </Divider>
-                            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                                <Typography variant="h6">Bottom 3 Students</Typography>
-                                <Button
-                                    variant="contained"
-                                    color="error"
-                                    startIcon={<PictureAsPdfIcon />}
-                                    onClick={downloadBottom3Pdf}
-                                >
-                                    Download Bottom 3 PDF
-                                </Button>
-                            </Box>
-                            <Grid container spacing={2}>
-                                {report.bottom3.map((student, idx) => (
-                                    <Grid item key={idx} xs={12} sm={6} md={4}>
-                                        <StudentCard
-                                            title={`Bottom ${idx + 1}`}
-                                            student={student}
-                                            color="error.main"
-                                        />
-                                    </Grid>
-                                ))}
-                            </Grid>
-                        </>
-                    )}
-                    {/* Visualization */}
-                    <Divider textAlign="left" sx={{ mt: 5, mb: 2 }}>
-                        <Typography variant="h5">📊 Student Performance Chart</Typography>
-                    </Divider>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <BarChart
-                            data={chartData}
-                            margin={{
-                                top: 5,
-                                right: 30,
-                                left: 20,
-                                bottom: 5,
-                            }}
-                        >
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="name" />
-                            <YAxis />
-                            <Tooltip />
-                            <Legend />
-                            <Bar dataKey="Hindi" fill="#8884d8" />
-                            <Bar dataKey="English" fill="#82ca9d" />
-                            <Bar dataKey="Math" fill="#ffc658" />
-                            <Bar dataKey="Science" fill="#d0743c" />
-                            <Bar dataKey="SST" fill="#691998" />
-                        </BarChart>
-                    </ResponsiveContainer>
-
-                    {/* All Students Table */}
-                    <Divider textAlign="left" sx={{ mt: 5, mb: 2 }}>
-                        <Typography variant="h5">👥 All Students</Typography>
-                    </Divider>
-                    <TableContainer component={Paper} sx={{ maxHeight: 500 }}>
-                        <Table stickyHeader>
-                            <TableHead>
-                                <TableRow>
-                                    <TableCell><strong>Name</strong></TableCell>
-                                    <TableCell>Hindi</TableCell>
-                                    <TableCell>English</TableCell>
-                                    <TableCell>Math</TableCell>
-                                    <TableCell>Science</TableCell>
-                                    <TableCell>SST</TableCell>
-                                    <TableCell>Total</TableCell>
-                                    <TableCell>Percentage</TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {report.students.map((student, index) => (
-                                    <TableRow key={index}>
-                                        <TableCell>{student.Name}</TableCell>
-                                        <TableCell>{student.Hindi}</TableCell>
-                                        <TableCell>{student.English}</TableCell>
-                                        <TableCell>{student.Math}</TableCell>
-                                        <TableCell>{student.Science}</TableCell>
-                                        <TableCell>{student.SST}</TableCell>
-                                        <TableCell>{student.Total}</TableCell>
-                                        <TableCell>{student.Percentage}%</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
-                </>
-            )}
-        </Container>
-    );
+      {/* Error Modal */}
+      <Dialog open={showError} onClose={() => setShowError(false)}>
+        <DialogTitle>Error</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ whiteSpace: "pre-wrap" }}>
+            {errorMsg}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowError(false)} color="primary" autoFocus>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Container>
+  );
 };
 
 export default Home;
