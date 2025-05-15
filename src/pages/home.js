@@ -104,7 +104,7 @@ const Home = () => {
     setLoading(true);
     try {
       const response = await axios.post(
-        "http://localhost:5000/upload",
+        "https://school-ai-be-1.onrender.com/upload",
         formData
       );
       setReport(response.data);
