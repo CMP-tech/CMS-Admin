@@ -36,6 +36,7 @@ import axios from "axios";
 import { jsPDF } from "jspdf";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { useNavigate } from 'react-router-dom';
 
 // Define a vibrant color palette
 const vibrantPalette = [
@@ -89,6 +90,45 @@ const StudentCard = ({ title, student, onView }) => {
         </Card>
     );
 };
+const getStudentFeedback = (student) => {
+  if (!student || !student.subjects) return "No feedback available";
+
+  const feedbackPoints = [];
+  const goodSubjects = [];
+  const needImprovementSubjects = [];
+
+  student.subjects.forEach(sub => {
+    if (!sub || !sub.grade) return;
+    
+    if (['A1', 'A2', 'B1'].includes(sub.grade)) {
+      goodSubjects.push(sub.subject || "a subject");
+    } else if (['D', 'E1', 'E2'].includes(sub.grade)) {
+      needImprovementSubjects.push(sub.subject || "a subject");
+    }
+  });
+
+  feedbackPoints.push(`${student.name || "The student"}, you ${student.passed ? 'passed' : 'need to work harder'} this exam.`);
+
+  if (goodSubjects.length > 0) {
+    feedbackPoints.push(`You performed well in: ${goodSubjects.join(', ')}. Keep up the excellent work!`);
+  }
+
+  if (needImprovementSubjects.length > 0) {
+    feedbackPoints.push(`You need to focus more on: ${needImprovementSubjects.join(', ')}. Let's aim for improvement in the next assessment.`);
+  }
+
+  if (student.percentage !== undefined) {
+    feedbackPoints.push(`Your overall percentage is ${student.percentage.toFixed(2)}% with a grade of ${student.overallGrade || 'N/A'}.`);
+  }
+
+  if (!student.passed) {
+    feedbackPoints.push(`Remember, consistent effort is key to success. Let's identify areas where you faced difficulties and work on them.`);
+  } else {
+    feedbackPoints.push(`Continue to strive for excellence in all subjects.`);
+  }
+
+  return feedbackPoints.join(' ');
+};
 
 const Home = () => {
     const [file, setFile] = useState(null);
@@ -108,7 +148,7 @@ const Home = () => {
     const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
 
     const passingPercentage = 33;
-
+    const navigate = useNavigate();
     const gradeMap = {
         91: { grade: 'A1', gradePoint: 10.0 },
         81: { grade: 'A2', gradePoint: 9.0 },
@@ -286,42 +326,6 @@ const Home = () => {
         });
     };
 
-    const getStudentFeedback = (student, subjectsInfo) => {
-        const feedbackPoints = [];
-        const goodSubjects = [];
-        const needImprovementSubjects = [];
-
-        student.subjects.forEach(sub => {
-            const maxMarks = subjectsInfo[sub.subject]?.maxMarks || 100;
-            const percentage = (sub.score / maxMarks) * 100;
-            if (percentage >= 75) {
-                goodSubjects.push(sub.subject);
-            } else if (percentage < 40) {
-                needImprovementSubjects.push(sub.subject);
-            }
-        });
-
-        feedbackPoints.push(`*${student.name}*, you *${student.passed ? 'passed' : 'need to work harder'}* this exam.`);
-
-        if (goodSubjects.length > 0) {
-            feedbackPoints.push(`You performed well in: *${goodSubjects.join(', ')}*. Keep up the excellent work!`);
-        }
-
-        if (needImprovementSubjects.length > 0) {
-            feedbackPoints.push(`You need to focus more on: *${needImprovementSubjects.join(', ')}*. Let's aim for improvement in the next assessment.`);
-        }
-
-        const overallPercentageMessage = `Your overall percentage is *${student.percentage.toFixed(2)}%* with a grade of *${student.overallGrade}*.`;
-        feedbackPoints.push(overallPercentageMessage);
-
-        if (!student.passed) {
-            feedbackPoints.push(`Remember, consistent effort is key to success. Let's identify areas where you faced difficulties and work on them.`);
-        } else {
-            feedbackPoints.push(`Continue to strive for excellence in all subjects.`);
-        }
-
-        return feedbackPoints.join(' ');
-    };
 
 
     const generatePdf = useCallback((title, content) => {
@@ -456,7 +460,153 @@ const Home = () => {
             setSelectedStudentDetails(student);
             setOpenDetailsDialog(true);
         };
+const handleViewStudentDet = (student) => {
+  if (!student) {
+    alert('No student data available');
+    return;
+  }
 
+  try {
+    const studentWindow = window.open('', '_blank');
+    studentWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>${student.name || 'Student'} - Performance Details</title>
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+        <style>
+          body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+          }
+          .container {
+            max-width: 1000px;
+            margin: 0 auto;
+          }
+          .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+          }
+          th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+          }
+          th {
+            background-color: #f5f5f5;
+            font-weight: 500;
+          }
+          .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+          }
+          .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+          }
+          .grid-item {
+            padding: 10px;
+          }
+          .passed {
+            color: #4CAF50;
+          }
+          .failed {
+            color: #F44336;
+          }
+          .print-btn {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>${student.name || 'Student'} - Performance Details</h1>
+            <button class="print-btn" onclick="window.print()">Print</button>
+          </div>
+          
+          <div class="card">
+            <h2>Overall Performance</h2>
+            <div class="grid">
+              <div class="grid-item">
+                <strong>Total Marks:</strong>
+                <div>${student.total || 'N/A'}</div>
+              </div>
+              <div class="grid-item">
+                <strong>Percentage:</strong>
+                <div>${student.percentage !== undefined ? student.percentage.toFixed(2) + '%' : 'N/A'}</div>
+              </div>
+              <div class="grid-item">
+                <strong>Overall Grade:</strong>
+                <div>${student.overallGrade || 'N/A'}</div>
+              </div>
+              <div class="grid-item">
+                <strong>Status:</strong>
+                <div class="${student.passed ? 'passed' : 'failed'}">
+                  ${student.passed ? 'Passed' : 'Failed'}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card">
+            <h2>Subject-wise Performance</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Subject</th>
+                  <th>Marks</th>
+                  <th>Grade</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${student.subjects && student.subjects.length > 0 
+                  ? student.subjects.map(sub => `
+                    <tr>
+                      <td>${sub.subject || 'N/A'}</td>
+                      <td>${sub.score !== undefined ? sub.score : 'N/A'}</td>
+                      <td>${sub.grade || 'N/A'}</td>
+                    </tr>
+                  `).join('')
+                  : '<tr><td colspan="3">No subject data available</td></tr>'
+                }
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="card">
+            <h2>Feedback</h2>
+            <p>${getStudentFeedback(student)}</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `);
+    studentWindow.document.close();
+  } catch (error) {
+    console.error('Error opening student details:', error);
+    alert('Could not open student details. Please try again.');
+  }
+};
         const handleCloseDetailsDialog = () => {
             setOpenDetailsDialog(false);
             setSelectedStudentDetails(null);
@@ -760,8 +910,13 @@ const Home = () => {
                         <TableCell align="right">{student.overallGrade}</TableCell>
                         <TableCell align="right">{student.passed ? <Typography color="success">Passed</Typography> : <Typography color="error">Failed</Typography>}</TableCell>
                         <TableCell align="right">
-                            <Button size="small" onClick={() => handleViewStudentDetails(student)}>View</Button>
-                        </TableCell>
+  <Button 
+    size="small" 
+    onClick={() => handleViewStudentDet(student)}
+  >
+    View
+  </Button>
+</TableCell>
                     </TableRow>
                 ))}
             </TableBody>
