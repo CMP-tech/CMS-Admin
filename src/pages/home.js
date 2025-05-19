@@ -196,7 +196,7 @@ const Home = () => {
 
         try {
             const response = await axios.post(
-                "https://school-ai-be-1.onrender.com/upload",
+                "https://school-ai-be.onrender.com/upload",
                 formData,
                 {
                     headers: { "Content-Type": "multipart/form-data" },
