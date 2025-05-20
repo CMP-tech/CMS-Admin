@@ -64,17 +64,19 @@ const StudentCard = ({ title, student, onView }) => {
     <Card
       variant="outlined"
       sx={{
-        minWidth: 280,
-        borderLeft: `6px solid`,
+        minWidth: { xs: "100%", sm: 300, md: 320 },
+        borderLeft: "6px solid",
         borderColor:
           title === "🌟 Topper"
             ? vibrantPalette[0]
             : title.startsWith("🥇")
             ? vibrantPalette[1]
             : vibrantPalette[7],
-        boxShadow: 1,
+        boxShadow: 2,
         display: "flex",
         flexDirection: "column",
+        m: 1,
+        overflow: "hidden",
       }}
     >
       <CardContent sx={{ flexGrow: 1 }}>
@@ -93,20 +95,40 @@ const StudentCard = ({ title, student, onView }) => {
         <Typography>
           <strong>Overall Grade:</strong> {student.overallGrade}
         </Typography>
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          mt={1}
+
+        <TableContainer
+          component={Paper}
           sx={{
-            display: "block",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
+            mt: 2,
+            maxHeight: 200,
+            overflow: "auto",
           }}
         >
-          {student.subjects
-            .map((sub) => `${sub.subject}: ${sub.score} (${sub.grade})`)
-            .join(", ")}
-        </Typography>
+          <Table size="small" stickyHeader aria-label="subjects table">
+            <TableHead>
+              <TableRow>
+                <TableCell>
+                  <strong>Subject</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>Score</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>Grade</strong>
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {student.subjects.map((sub, index) => (
+                <TableRow key={index}>
+                  <TableCell>{sub.subject}</TableCell>
+                  <TableCell>{sub.score}</TableCell>
+                  <TableCell>{sub.grade}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       </CardContent>
       <Box sx={{ p: 1, display: "flex", justifyContent: "flex-end" }}>
         <Button size="small" onClick={() => onView(student)}>
@@ -448,53 +470,53 @@ const Home = () => {
   const openSummaryInNewWindow = () => {
     if (report?.summary) {
       const summaryContent = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Exam Summary</title>
-                    <style>
-                        body {
-                            font-family: Arial, sans-serif;
-                            padding: 20px;
-                            color: #333;
-                            line-height: 1.6;
-                        }
-                        h2 {
-                        color: #4CAF50;
-                                margin-bottom: 20px;
-                                border-bottom: 2px solid #4CAF50;
-                                padding-bottom: 10px;
-                            }
-                            h3{
-                                color: #008000
-                            }
-                            p {
-                                margin-bottom: 10px;
-                            }
-                            ul, ol {
-                                margin-left: 20px;
-                                margin-bottom: 10px;
-                            }
-                            li {
-                                margin-bottom: 5px;
-                            }
-                            .section-title{
-                                color: #1976D2;
-                                font-size: 1.2em;
-                                font-weight: bold;
-                                margin-top: 20px;
-                                border-bottom: 1px solid #1976D2;
-                                padding-bottom: 5px;
-                            }
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Exam Summary</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            color: #333;
+            line-height: 1.6;
+          }
+          h2 {
+            color: #4CAF50;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+          }
+          h3 {
+            color: #008000;
+          }
+          p {
+            margin-bottom: 10px;
+          }
+          ul, ol {
+            margin-left: 20px;
+            margin-bottom: 10px;
+          }
+          li {
+            margin-bottom: 5px;
+          }
+          .section-title {
+            color: #1976D2;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-top: 20px;
+            border-bottom: 1px solid #1976D2;
+            padding-bottom: 5px;
+          }
+        </style>
+      </head>
+      <body>
+        <h2>Exam Summary</h2>
+        ${report.summary}  <!-- no .replace -->
+      </body>
+      </html>
+    `;
 
-                        </style>
-                    </head>
-                    <body>
-                        <h2>Exam Summary</h2>
-                        ${report.summary.replace(/\n/g, "<br>")}
-                    </body>
-                    </html>
-                `;
       const newWindow = window.open("", "_blank");
       newWindow.document.write(summaryContent);
       newWindow.document.close();
@@ -530,195 +552,210 @@ const Home = () => {
 
       // Writing initial HTML with loading state for feedback
       studentWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>${student.name || "Student"} - Performance Details</title>
-        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-        <style>
-          body {
-            font-family: 'Roboto', sans-serif;
-            margin: 0;
-            padding: 20px;
-            color: #333;
-          }
-          .container {
-            max-width: 1000px;
-            margin: 0 auto;
-          }
-          .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-          }
-          table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-          }
-          th, td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-          }
-          th {
-            background-color: #f5f5f5;
-            font-weight: 500;
-          }
-          .card {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            padding: 20px;
-            margin-bottom: 20px;
-          }
-          .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-          }
-          .grid-item {
-            padding: 10px;
-          }
-          .passed {
-            color: #4CAF50;
-          }
-          .failed {
-            color: #F44336;
-          }
-          .print-btn {
-            background: #1976d2;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-          }
-          .loader {
-            display: inline-block;
-            border: 3px solid #f3f3f3; 
-            border-top: 3px solid #3498db;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
-            margin-right: 10px;
-            vertical-align: middle;
-          }
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-          .error-text {
-            color: #F44336;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>${student.name || "Student"} - Performance Details</h1>
-            <button class="print-btn" onclick="window.print()">Print</button>
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <title>${student.name || "Student"} - Performance Details</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Roboto', sans-serif;
+        margin: 0;
+        padding: 20px;
+        color: #333;
+      }
+      .container {
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+      }
+      th, td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+      }
+      th {
+        background-color: #f5f5f5;
+        font-weight: 500;
+      }
+      .card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 20px;
+        margin-bottom: 20px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 20px;
+      }
+      .grid-item {
+        padding: 10px;
+      }
+      .passed {
+        color: #4CAF50;
+      }
+      .failed {
+        color: #F44336;
+      }
+      .print-btn {
+        background: #1976d2;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-left: 10px;
+      }
+      .loader {
+        display: inline-block;
+        border: 3px solid #f3f3f3; 
+        border-top: 3px solid #3498db;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        animation: spin 1s linear infinite;
+        margin-right: 10px;
+        vertical-align: middle;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      .error-text {
+        color: #F44336;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>${student.name || "Student"} - Performance Details</h1>
+        <div>
+          <button class="print-btn" onclick="window.print()">Print</button>
+          <button class="print-btn" onclick="downloadPDF()">Download PDF</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Overall Performance</h2>
+        <div class="grid">
+          <div class="grid-item">
+            <strong>Total Marks:</strong>
+            <div>${student.total || "N/A"}</div>
           </div>
-          
-          <div class="card">
-            <h2>Overall Performance</h2>
-            <div class="grid">
-              <div class="grid-item">
-                <strong>Total Marks:</strong>
-                <div>${student.total || "N/A"}</div>
-              </div>
-              <div class="grid-item">
-                <strong>Percentage:</strong>
-                <div>${
-                  student.percentage !== undefined
-                    ? student.percentage.toFixed(2) + "%"
-                    : "N/A"
-                }</div>
-              </div>
-              <div class="grid-item">
-                <strong>Overall Grade:</strong>
-                <div>${student.overallGrade || "N/A"}</div>
-              </div>
-              <div class="grid-item">
-                <strong>Status:</strong>
-                <div class="${student.passed ? "passed" : "failed"}">
-                  ${student.passed ? "Passed" : "Failed"}
-                </div>
-              </div>
-            </div>
+          <div class="grid-item">
+            <strong>Percentage:</strong>
+            <div>${
+              student.percentage !== undefined
+                ? student.percentage.toFixed(2) + "%"
+                : "N/A"
+            }</div>
           </div>
-          
-          <div class="card">
-            <h2>Subject-wise Performance</h2>
-            <table>
-              <thead>
-                <tr>
-                  <th>Subject</th>
-                  <th>Marks</th>
-                  <th>Grade</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${
-                  student.subjects && student.subjects.length > 0
-                    ? student.subjects
-                        .map(
-                          (sub) => `
-                    <tr>
-                      <td>${sub.subject || "N/A"}</td>
-                      <td>${sub.score !== undefined ? sub.score : "N/A"}</td>
-                      <td>${sub.grade || "N/A"}</td>
-                    </tr>
-                  `
-                        )
-                        .join("")
-                    : '<tr><td colspan="3">No subject data available</td></tr>'
-                }
-              </tbody>
-            </table>
+          <div class="grid-item">
+            <strong>Overall Grade:</strong>
+            <div>${student.overallGrade || "N/A"}</div>
           </div>
-          
-          <div class="card">
-            <h2>Feedback</h2>
-            <div id="feedback-container">
-              <div><span class="loader"></span> Loading feedback...</div>
+          <div class="grid-item">
+            <strong>Status:</strong>
+            <div class="${student.passed ? "passed" : "failed"}">
+              ${student.passed ? "Passed" : "Failed"}
             </div>
           </div>
         </div>
+      </div>
 
-        <script>
-          // Function to fetch feedback data
-          async function fetchFeedback() {
-            const feedbackContainer = document.getElementById('feedback-container');
-            
-            try {
-              const response = await fetch('https://school-ai-be.onrender.com/feedback/${
-                student.name || ""
-              }');
-              
-              if (!response.ok) {
-                throw new Error('Failed to fetch feedback');
-              }
-              
-              const data = await response.json();
-              
-              // Update the feedback container with the fetched feedback
-              feedbackContainer.innerHTML = '<p>' + (data.feedback || 'No feedback available') + '</p>';
-            } catch (error) {
-              console.error('Error fetching feedback:', error);
-              feedbackContainer.innerHTML = '<p class="error-text">Could not load feedback. Please try again later.</p>';
+      <div class="card">
+        <h2>Subject-wise Performance</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Subject</th>
+              <th>Marks</th>
+              <th>Grade</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${
+              student.subjects && student.subjects.length > 0
+                ? student.subjects
+                    .map(
+                      (sub) => `
+                  <tr>
+                    <td>${sub.subject || "N/A"}</td>
+                    <td>${sub.score !== undefined ? sub.score : "N/A"}</td>
+                    <td>${sub.grade || "N/A"}</td>
+                  </tr>
+                `
+                    )
+                    .join("")
+                : '<tr><td colspan="3">No subject data available</td></tr>'
             }
-          }
-          
-          // Call the function to fetch feedback when the page loads
-          window.onload = fetchFeedback;
-        </script>
-      </body>
-      </html>
-    `);
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Feedback</h2>
+        <div id="feedback-container">
+          <div><span class="loader"></span> Loading feedback...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <script>
+      async function fetchFeedback() {
+        const feedbackContainer = document.getElementById('feedback-container');
+        try {
+          const response = await fetch('https://school-ai-be.onrender.com/feedback/${
+            student.name || ""
+          }');
+          if (!response.ok) throw new Error('Failed to fetch feedback');
+          const data = await response.json();
+          feedbackContainer.innerHTML = '<p>' + (data.feedback || 'No feedback available') + '</p>';
+        } catch (error) {
+          console.error('Error fetching feedback:', error);
+          feedbackContainer.innerHTML = '<p class="error-text">Could not load feedback. Please try again later.</p>';
+        }
+      }
+
+      window.onload = fetchFeedback;
+
+      function downloadPDF() {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'pt', 'a4');
+        const container = document.querySelector('.container');
+
+        html2canvas(container).then(canvas => {
+          const imgData = canvas.toDataURL('image/png');
+          const imgProps = pdf.getImageProperties(imgData);
+          const pdfWidth = pdf.internal.pageSize.getWidth();
+          const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+          pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+          pdf.save('${student.name || "student"}_performance.pdf');
+        });
+      }
+    </script>
+  </body>
+  </html>
+`);
 
       studentWindow.document.close();
     } catch (error) {
@@ -892,9 +929,11 @@ const Home = () => {
                     View Summary
                   </Button>
                 </Box>
-                <Typography variant="body2" whiteSpace="pre-line">
-                  {report.summary}
-                </Typography>
+                <Typography
+                  variant="body2"
+                  component="div"
+                  dangerouslySetInnerHTML={{ __html: report.summary }}
+                />
               </Paper>
             )}
 

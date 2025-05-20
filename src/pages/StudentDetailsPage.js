@@ -12,9 +12,12 @@ import {
   Button,
   Divider,
   Container,
-  Grid
+  Grid,
+  CircularProgress,
+  Chip
 } from '@mui/material';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 const StudentDetailsPage = () => {
   const { name } = useParams();
@@ -28,11 +31,13 @@ const StudentDetailsPage = () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`https://school-ai-be.onrender.com/feedback/${name}`);
+        // Fetch individual student feedback from your API
+        const response = await fetch(`https://school-ai-be.onrender.com/feedback/${encodeURIComponent(name)}`);
+        
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to fetch student feedback');
+          throw new Error('Failed to fetch student feedback');
         }
+        
         const data = await response.json();
         setStudentDetails(data);
       } catch (err) {
@@ -47,17 +52,23 @@ const StudentDetailsPage = () => {
 
   if (loading) {
     return (
-      <Box p={4}>
-        <Typography variant="h5">Loading student details...</Typography>
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+        <CircularProgress size={60} />
       </Box>
     );
   }
 
   if (error) {
     return (
-      <Box p={4}>
-        <Typography variant="h6" color="error">Error: {error}</Typography>
-        <Button variant="contained" onClick={() => navigate(-1)} sx={{ mt: 2 }}>
+      <Box p={4} textAlign="center">
+        <Typography variant="h6" color="error" gutterBottom>
+          Error: {error}
+        </Typography>
+        <Button 
+          variant="contained" 
+          onClick={() => navigate(-1)}
+          sx={{ mt: 2 }}
+        >
           Go Back
         </Button>
       </Box>
@@ -66,71 +77,116 @@ const StudentDetailsPage = () => {
 
   if (!studentDetails) {
     return (
-      <Box p={4}>
-        <Typography variant="h5">No student data found for {name}</Typography>
-        <Button variant="contained" onClick={() => navigate(-1)} sx={{ mt: 2 }}>
+      <Box p={4} textAlign="center">
+        <Typography variant="h5" gutterBottom>
+          No student data found for {name}
+        </Typography>
+        <Button 
+          variant="contained" 
+          onClick={() => navigate(-1)}
+          sx={{ mt: 2 }}
+        >
           Go Back
         </Button>
       </Box>
     );
   }
 
-  const { feedback, ...student } = studentDetails;
-
   return (
-    <Container maxWidth="md" sx={{ mt: 4, mb: 6 }}>feedback
+    <Container maxWidth="md" sx={{ mt: 4, mb: 6 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
         <Typography variant="h4" fontWeight="bold">
-          {student.name} - Performance Details
+          {name}'s Performance Report
         </Typography>
         <Button
           variant="outlined"
           onClick={() => navigate(-1)}
+          startIcon={<ArrowBackIcon />}
         >
           Back to Report
         </Button>
       </Box>
 
+      {/* Overall Performance Summary */}
       <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-        <Typography variant="h6" gutterBottom>Overall Performance</Typography>
+        <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
+          Overall Performance Summary
+        </Typography>
+        <Divider sx={{ mb: 2 }} />
         <Grid container spacing={2}>
           <Grid item xs={6} sm={3}>
-            <Typography variant="body1"><strong>Total Marks:</strong></Typography>
-            <Typography variant="h6">{student.total}</Typography>
+            <Typography variant="subtitle2" color="text.secondary">
+              Total Marks
+            </Typography>
+            <Typography variant="h5">{studentDetails.performance?.total || 'N/A'}</Typography>
           </Grid>
           <Grid item xs={6} sm={3}>
-            <Typography variant="body1"><strong>Percentage:</strong></Typography>
-            <Typography variant="h6">{student.percentage?.toFixed(2)}%</Typography>
+            <Typography variant="subtitle2" color="text.secondary">
+              Percentage
+            </Typography>
+            <Typography variant="h5">
+              {studentDetails.performance?.percentage ? `${studentDetails.performance.percentage.toFixed(2)}%` : 'N/A'}
+            </Typography>
           </Grid>
           <Grid item xs={6} sm={3}>
-            <Typography variant="body1"><strong>Status:</strong></Typography>
-            <Typography
-              variant="h6"
-              color={student.passed ? "success.main" : "error.main"}
-            >
-              {student.passed ? "Passed" : "Failed"}
+            <Typography variant="subtitle2" color="text.secondary">
+              Result Status
+            </Typography>
+            <Chip
+              label={studentDetails.performance?.passed ? 'Passed' : 'Failed'}
+              color={studentDetails.performance?.passed ? 'success' : 'error'}
+              sx={{ fontSize: '1rem', padding: '0.5rem' }}
+            />
+          </Grid>
+          <Grid item xs={6} sm={3}>
+            <Typography variant="subtitle2" color="text.secondary">
+              Subjects Failed
+            </Typography>
+            <Typography variant="h5">
+              {studentDetails.performance?.failCount || 0}
             </Typography>
           </Grid>
         </Grid>
       </Paper>
 
+      {/* Subject-wise Performance */}
       <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-        <Typography variant="h6" gutterBottom mb={2}>Subject-wise Performance</Typography>
+        <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
+          Subject-wise Performance
+        </Typography>
+        <Divider sx={{ mb: 2 }} />
         <TableContainer>
           <Table>
             <TableHead>
               <TableRow>
                 <TableCell><strong>Subject</strong></TableCell>
-                <TableCell align="right"><strong>Marks</strong></TableCell>
-                <TableCell align="right"><strong>Grade</strong></TableCell>
+                <TableCell align="right"><strong>Marks Obtained</strong></TableCell>
+                <TableCell align="center"><strong>Grade</strong></TableCell>
+                <TableCell align="center"><strong>Status</strong></TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {student.subjects.map((sub) => (
-                <TableRow key={sub.subject}>
-                  <TableCell>{sub.subject}</TableCell>
-                  <TableCell align="right">{sub.score}</TableCell>
-                  <TableCell align="right">{sub.grade}</TableCell>
+              {studentDetails.performance?.subjects?.map((subject) => (
+                <TableRow key={subject.subject}>
+                  <TableCell>{subject.subject}</TableCell>
+                  <TableCell align="right">{subject.score}</TableCell>
+                  <TableCell align="center">
+                    <Chip 
+                      label={subject.grade} 
+                      color={
+                        subject.grade === 'A1' || subject.grade === 'A2' ? 'success' :
+                        subject.grade === 'B1' || subject.grade === 'B2' ? 'info' :
+                        subject.grade === 'C' ? 'warning' : 'error'
+                      }
+                    />
+                  </TableCell>
+                  <TableCell align="center">
+                    <Chip
+                      label={subject.pass ? 'Passed' : 'Failed'}
+                      color={subject.pass ? 'success' : 'error'}
+                      variant="outlined"
+                    />
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -138,11 +194,39 @@ const StudentDetailsPage = () => {
         </TableContainer>
       </Paper>
 
+      {/* Personalized Feedback */}
       <Paper elevation={3} sx={{ p: 3 }}>
-        <Typography variant="h6" gutterBottom>Feedback</Typography>
-        <Typography variant="body1">
-          {}
+        <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
+          Personalized Feedback
         </Typography>
+        <Divider sx={{ mb: 3 }} />
+        <Box sx={{ 
+          backgroundColor: '#f8f9fa', 
+          p: 3, 
+          borderRadius: 1,
+          borderLeft: '4px solid #3f51b5'
+        }}>
+          {studentDetails.feedback ? (
+            studentDetails.feedback.split('\n').map((paragraph, index) => (
+              <Typography 
+                key={index} 
+                paragraph 
+                sx={{ 
+                  mb: 2,
+                  whiteSpace: 'pre-wrap',
+                  textAlign: paragraph.startsWith('**') ? 'center' : 'left',
+                  fontWeight: paragraph.startsWith('**') ? 'bold' : 'normal'
+                }}
+              >
+                {paragraph.replace(/\*\*/g, '')}
+              </Typography>
+            ))
+          ) : (
+            <Typography color="text.secondary">
+              No feedback available for this student.
+            </Typography>
+          )}
+        </Box>
       </Paper>
     </Container>
   );
