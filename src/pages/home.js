@@ -283,7 +283,7 @@ const Home = () => {
 
     try {
       const response = await axios.post(
-        "https://school-ai-be.onrender.com/upload",
+        "http://localhost:5000/upload",
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
@@ -395,9 +395,7 @@ const Home = () => {
       subjectWisePerformance,
       overallAveragePercentage,
     });
-  };
-
-  const generatePdf = useCallback((title, content) => {
+  };  const generatePdf = useCallback((title, content) => {
     const pdf = new jsPDF();
     const margin = 10;
     const lineHeight = 7;
@@ -482,13 +480,13 @@ const Home = () => {
             line-height: 1.6;
           }
           h2 {
-            color: #4CAF50;
+            color:rgb(0, 0, 0);
             margin-bottom: 20px;
-            border-bottom: 2px solid #4CAF50;
+            border-bottom: 2px solidrgb(0, 0, 0);
             padding-bottom: 10px;
           }
           h3 {
-            color: #008000;
+            color:rgb(0, 0, 0);
           }
           p {
             margin-bottom: 10px;
@@ -501,11 +499,11 @@ const Home = () => {
             margin-bottom: 5px;
           }
           .section-title {
-            color: #1976D2;
+            color:rgb(0, 0, 0);
             font-size: 1.2em;
             font-weight: bold;
             margin-top: 20px;
-            border-bottom: 1px solid #1976D2;
+            border-bottom: 1px solidrgb(0, 0, 0);
             padding-bottom: 5px;
           }
         </style>
@@ -723,7 +721,7 @@ const Home = () => {
       async function fetchFeedback() {
         const feedbackContainer = document.getElementById('feedback-container');
         try {
-          const response = await fetch('https://school-ai-be.onrender.com/feedback/${
+          const response = await fetch('http://localhost:5000/feedback/${
             student.name || ""
           }');
           if (!response.ok) throw new Error('Failed to fetch feedback');
@@ -1373,15 +1371,20 @@ const Home = () => {
 
                 {/* Feedback Section */}
                 <Box mt={3}>
-                  <Typography variant="h6">Feedback</Typography>
-                  <Typography variant="body2">
-                    {selectedStudentDetails?.feedback ? (
-                      selectedStudentDetails.feedback
-                    ) : (
-                      <em>No specific feedback available for this student.</em>
-                    )}
-                  </Typography>
-                </Box>
+  <Typography variant="h6">Feedback</Typography>
+  {selectedStudentDetails?.feedback ? (
+    <Typography
+      variant="body2"
+      component="div"
+      dangerouslySetInnerHTML={{ __html: selectedStudentDetails.feedback }}
+    />
+  ) : (
+    <Typography variant="body2">
+      <em>No specific feedback available for this student.</em>
+    </Typography>
+  )}
+</Box>
+
               </DialogContent>
             </Dialog>
           </>
