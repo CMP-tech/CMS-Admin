@@ -283,7 +283,7 @@ const Home = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:5000/upload",
+        "https://school-ai-be.onrender.com/upload",
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
@@ -721,7 +721,7 @@ const Home = () => {
       async function fetchFeedback() {
         const feedbackContainer = document.getElementById('feedback-container');
         try {
-          const response = await fetch('http://localhost:5000/feedback/${
+          const response = await fetch('https://school-ai-be.onrender.com/feedback/${
             student.name || ""
           }');
           if (!response.ok) throw new Error('Failed to fetch feedback');
