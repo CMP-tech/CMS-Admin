@@ -32,7 +32,7 @@ import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
-import axios from "axios";
+import axios from "../api/axiosInstance"; // Adjust path if needed
 import { jsPDF } from "jspdf";
 import {
   BarChart,
@@ -90,8 +90,9 @@ const StudentCard = ({ title, student, onView }) => {
           <strong>Total:</strong> {student.total}
         </Typography>
         <Typography>
-          <strong>Percentage:</strong> {student.percentage}%
-        </Typography>
+  <strong>Percentage:</strong> {student.percentage.toFixed(2)}%
+</Typography>
+
         <Typography>
           <strong>Overall Grade:</strong> {student.overallGrade}
         </Typography>
@@ -283,7 +284,7 @@ const Home = () => {
 
     try {
       const response = await axios.post(
-        "https://school-ai-be.onrender.com/upload",
+        "/upload",
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
@@ -721,7 +722,7 @@ const Home = () => {
       async function fetchFeedback() {
         const feedbackContainer = document.getElementById('feedback-container');
         try {
-          const response = await fetch('https://school-ai-be.onrender.com/feedback/${
+          const response = await axios.get('/feedback/${
             student.name || ""
           }');
           if (!response.ok) throw new Error('Failed to fetch feedback');

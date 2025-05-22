@@ -1,7 +1,7 @@
-// Layout.js
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import FlightClassIcon from "@mui/icons-material/FlightClass";
+import SchoolIcon from '@mui/icons-material/School'; // Import a suitable icon for Academic Year
 import {
   Box,
   Drawer,
@@ -65,6 +65,8 @@ const Layout = ({ children }) => {
     { text: "Home", icon: <HomeIcon />, path: "/" },
     { text: "Classes", icon: <FlightClassIcon />, path: "/classes" },
     { text: "Students", icon: <PeopleIcon />, path: "/student" },
+  // Added Academic Year
+    { text: "Academic Year", icon: <SchoolIcon />, path: "/academic-year" },
     { text: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
     { text: "Settings", icon: <SettingsIcon />, path: "/settings" },
   ];
