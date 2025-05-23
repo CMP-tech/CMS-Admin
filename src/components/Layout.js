@@ -1,7 +1,14 @@
 import React, { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import FlightClassIcon from "@mui/icons-material/FlightClass";
-import SchoolIcon from '@mui/icons-material/School';
+import { useNavigate, useLocation, Outlet } from "react-router-dom";
+
+import SchoolIcon from "@mui/icons-material/School";
+import DashboardIcon from "@mui/icons-material/Dashboard";
+
+import PaymentIcon from "@mui/icons-material/Payment";
+import BarChartIcon from "@mui/icons-material/BarChart";
+
+import ApartmentIcon from "@mui/icons-material/Apartment";
+
 import {
   Box,
   Drawer,
@@ -22,17 +29,17 @@ import {
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import HomeIcon from "@mui/icons-material/Home";
+
 import SettingsIcon from "@mui/icons-material/Settings";
-import DashboardIcon from "@mui/icons-material/Dashboard";
+
 import LogoutIcon from "@mui/icons-material/Logout";
-import PeopleIcon from "@mui/icons-material/People";
+
 import logo from "../assets/logo-website-orange.png";
 import logoSideBar from "../assets/logo-website-white.png";
 
 const drawerWidth = 240;
 
-const Layout = ({ children }) => {
+const Layout = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -79,11 +86,11 @@ const Layout = ({ children }) => {
   };
 
   const menuItems = [
-    { text: "Home", icon: <HomeIcon />, path: "/" },
-    { text: "Classes", icon: <FlightClassIcon />, path: "/classes" },
-    { text: "Students", icon: <PeopleIcon />, path: "/student" },
-    { text: "Academic Year", icon: <SchoolIcon />, path: "/academic-year" },
     { text: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
+    { text: "Schools", icon: <ApartmentIcon />, path: "/schools" },
+    { text: "Plans", icon: <SchoolIcon />, path: "/plans" },
+    { text: "Invoices", icon: <PaymentIcon />, path: "/invoices" },
+    { text: "Usage", icon: <BarChartIcon />, path: "/usage" },
     { text: "Settings", icon: <SettingsIcon />, path: "/settings" },
   ];
 
@@ -336,7 +343,7 @@ const Layout = ({ children }) => {
           mt: "64px", // To avoid content being hidden under AppBar
         }}
       >
-        {children}
+        <Outlet />
       </Box>
     </Box>
   );
