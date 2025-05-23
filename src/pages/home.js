@@ -32,7 +32,7 @@ import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
-import axios from "../api/axiosInstance"; // Adjust path if needed
+import axiosInstance from "../api/axiosInstance";
 import { jsPDF } from "jspdf";
 import {
   BarChart,
@@ -90,9 +90,8 @@ const StudentCard = ({ title, student, onView }) => {
           <strong>Total:</strong> {student.total}
         </Typography>
         <Typography>
-  <strong>Percentage:</strong> {student.percentage.toFixed(2)}%
-</Typography>
-
+          <strong>Percentage:</strong> {student.percentage}%
+        </Typography>
         <Typography>
           <strong>Overall Grade:</strong> {student.overallGrade}
         </Typography>
@@ -283,8 +282,8 @@ const Home = () => {
     setUploadError(null); // Clear previous errors
 
     try {
-      const response = await axios.post(
-        "/upload",
+      const response = await axiosInstance.post(
+        "uapi/upload",
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
@@ -722,7 +721,7 @@ const Home = () => {
       async function fetchFeedback() {
         const feedbackContainer = document.getElementById('feedback-container');
         try {
-          const response = await axios.get('/feedback/${
+          const response = await axiosInstance.get('uapi/feedback/${
             student.name || ""
           }');
           if (!response.ok) throw new Error('Failed to fetch feedback');

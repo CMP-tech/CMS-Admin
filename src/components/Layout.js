@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import FlightClassIcon from "@mui/icons-material/FlightClass";
-import SchoolIcon from '@mui/icons-material/School'; // Import a suitable icon for Academic Year
+import SchoolIcon from '@mui/icons-material/School';
 import {
   Box,
   Drawer,
@@ -29,43 +29,59 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import PeopleIcon from "@mui/icons-material/People";
 import logo from "../assets/logo-website-orange.png";
 import logoSideBar from "../assets/logo-website-white.png";
-// Sidebar width
+
 const drawerWidth = 240;
 
 const Layout = ({ children }) => {
   const theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
-  const [open, setOpen] = useState(false);
 
-  // Determine active route from location
+  // State to manage if the drawer is "permanently" open (clicked open)
+  const [isPermanentlyOpen, setIsPermanentlyOpen] = useState(false);
+  // State to manage if the mouse is currently hovering over the drawer
+  const [isHovering, setIsHovering] = useState(false);
+
+  // The actual 'open' state for the drawer will be true if it's permanently open,
+  // or if it's not permanently open but the user is hovering.
+  const open = isPermanentlyOpen || (isHovering && !isPermanentlyOpen);
+
   const currentPath = location.pathname;
 
   const handleDrawerOpen = () => {
-    setOpen(true);
+    setIsPermanentlyOpen(true);
   };
 
   const handleDrawerClose = () => {
-    setOpen(false);
+    setIsPermanentlyOpen(false);
+  };
+
+  const handleMouseEnter = () => {
+    setIsHovering(true);
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovering(false);
   };
 
   const handleMenuItemClick = (path) => {
     navigate(path);
+    // Optionally close the drawer if it's not permanently open after navigation
+    // if (!isPermanentlyOpen) {
+    //   setIsHovering(false);
+    // }
   };
 
-  // Mock user data
   const userData = {
     name: "John Doe",
     email: "john.doe@example.com",
     avatar: "JD",
   };
 
-  // Menu items for the sidebar with paths
   const menuItems = [
     { text: "Home", icon: <HomeIcon />, path: "/" },
     { text: "Classes", icon: <FlightClassIcon />, path: "/classes" },
     { text: "Students", icon: <PeopleIcon />, path: "/student" },
-  // Added Academic Year
     { text: "Academic Year", icon: <SchoolIcon />, path: "/academic-year" },
     { text: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
     { text: "Settings", icon: <SettingsIcon />, path: "/settings" },
@@ -110,7 +126,6 @@ const Layout = ({ children }) => {
               component="img"
               sx={{
                 height: 40,
-                //   width: 40,
               }}
               alt="Logo"
               src={logoSideBar}
@@ -122,7 +137,9 @@ const Layout = ({ children }) => {
       {/* Sidebar */}
       <Drawer
         variant="permanent"
-        open={open}
+        open={open} // Now derived from isPermanentlyOpen and isHovering
+        onMouseEnter={handleMouseEnter} // Add mouse enter event
+        onMouseLeave={handleMouseLeave} // Add mouse leave event
         sx={{
           width: drawerWidth,
           flexShrink: 0,
@@ -168,13 +185,13 @@ const Layout = ({ children }) => {
                 component="img"
                 sx={{
                   height: 40,
-                  //   width: 40,
                 }}
                 alt="Logo"
                 src={logo}
               />
             </Box>
           )}
+          {/* Show a placeholder logo when collapsed if you prefer */}
           {!open && (
             <Box
               component="img"
@@ -183,9 +200,10 @@ const Layout = ({ children }) => {
                 width: 32,
               }}
               alt="Logo"
-              src="https://via.placeholder.com/32"
+              src={logoSideBar}
             />
           )}
+          {/* Close button only visible when drawer is open */}
           {open && (
             <IconButton onClick={handleDrawerClose}>
               <ChevronLeftIcon />
@@ -195,8 +213,6 @@ const Layout = ({ children }) => {
         <Divider />
         <List sx={{ flexGrow: 0 }}>
           {menuItems.map((item, index) => {
-            // Check if current path matches this menu item's path
-            // Also handle nested paths (e.g. /student/123 should highlight the Students menu)
             const isActive =
               currentPath === item.path ||
               (item.path !== "/" && currentPath.startsWith(item.path));
@@ -316,10 +332,6 @@ const Layout = ({ children }) => {
       <Box
         component="main"
         sx={{
-          //   flexGrow: 1,
-          //   p: 3,
-          //   width: { sm: `calc(100% - ${open ? drawerWidth : 72}px)` },
-          //   ml: { sm: open ? `${drawerWidth}px` : `72px` },
           width: "100%",
           mt: "64px", // To avoid content being hidden under AppBar
         }}
