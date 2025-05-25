@@ -86,11 +86,11 @@ const Layout = () => {
   };
 
   const menuItems = [
-    { text: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
-    { text: "Schools", icon: <ApartmentIcon />, path: "/schools" },
-    { text: "Plans", icon: <SchoolIcon />, path: "/plans" },
-    { text: "Invoices", icon: <PaymentIcon />, path: "/invoices" },
-    { text: "Usage", icon: <BarChartIcon />, path: "/usage" },
+    { text: "Dashboard", icon: <DashboardIcon />, path: "/admin/dashboard" },
+    { text: "Schools", icon: <ApartmentIcon />, path: "/admin/schools" },
+    { text: "Plans", icon: <SchoolIcon />, path: "/admin/plans" },
+    { text: "Invoices", icon: <PaymentIcon />, path: "/admin/invoices" },
+    { text: "Usage", icon: <BarChartIcon />, path: "/admin/usage" },
     { text: "Settings", icon: <SettingsIcon />, path: "/settings" },
   ];
 
