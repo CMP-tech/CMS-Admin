@@ -1,3 +1,4 @@
+// src/pages/AdminSignup.js
 import React, { useState } from "react";
 import axiosInstance from "../../api/axiosInstance";
 import { useNavigate } from "react-router-dom";
@@ -10,39 +11,41 @@ import {
   Typography,
   Alert,
   Container,
-  Stack,
-  Link,
 } from "@mui/material";
+import axios from "axios";
 
-export default function AdminLogin() {
+export default function AdminSignup() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = async () => {
+  const handleSignup = async () => {
     setError("");
     setLoading(true);
 
     try {
-      const response = await axiosInstance.post("/api/admin/login", {
+      const response = await axiosInstance.post("api/admin/signup", {
+        name,
         email,
         password,
       });
 
-      localStorage.setItem("token", response.token);
-
-      navigate("/admin/dashboard");
+      if (response.status === 201) {
+        // Signup successful, navigate to login
+        navigate("admin/login");
+      } else {
+        setError("Signup failed. Please try again.");
+      }
     } catch (err) {
-      setError(err?.response?.data?.message || "Invalid email or password.");
+      const message =
+        err.response?.data?.message || "Something went wrong. Try again.";
+      setError(message);
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter") handleLogin();
   };
 
   return (
@@ -53,20 +56,19 @@ export default function AdminLogin() {
         alignItems: "center",
         justifyContent: "center",
         backgroundColor: "background.default",
-        p: 2,
+        padding: 2,
       }}
     >
       <Container maxWidth="sm">
-        <Card sx={{ borderRadius: 2 }}>
+        <Card elevation={3} sx={{ borderRadius: 2, overflow: "visible" }}>
           <CardContent sx={{ p: 4 }}>
             <Typography
               variant="h4"
-              component="h1"
               align="center"
               gutterBottom
-              sx={{ fontWeight: "bold", mb: 3 }}
+              sx={{ fontWeight: "bold", color: "primary.main", mb: 3 }}
             >
-              Admin Login
+              Admin Signup
             </Typography>
 
             {error && (
@@ -79,17 +81,22 @@ export default function AdminLogin() {
               </Alert>
             )}
 
-            <Box component="form" noValidate>
+            <Box>
+              <TextField
+                fullWidth
+                label="Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                margin="normal"
+                required
+              />
               <TextField
                 fullWidth
                 label="Email"
-                type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                onKeyPress={handleKeyPress}
-                required
                 margin="normal"
-                placeholder="admin@example.com"
+                required
               />
               <TextField
                 fullWidth
@@ -97,40 +104,23 @@ export default function AdminLogin() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                onKeyPress={handleKeyPress}
-                required
                 margin="normal"
-                placeholder="••••••••"
+                required
               />
-
               <Button
                 fullWidth
                 variant="contained"
-                size="large"
-                onClick={handleLogin}
-                disabled={loading || !email || !password}
-                sx={{ py: 1.5, borderRadius: 1, mt: 2, textTransform: "none" }}
+                sx={{
+                  mt: 3,
+                  py: 1.5,
+                  fontSize: "1rem",
+                  fontWeight: "medium",
+                }}
+                onClick={handleSignup}
+                disabled={loading || !name || !email || !password}
               >
-                {loading ? "Signing in..." : "Login"}
+                {loading ? "Signing up..." : "Signup"}
               </Button>
-
-              {/* Forgot/Reset Password Links */}
-              <Stack direction="row" justifyContent="space-between" mt={2}>
-                <Link
-                  href="/admin/forgot-password"
-                  underline="hover"
-                  variant="body2"
-                >
-                  Forgot Password?
-                </Link>
-                <Link
-                  href="/forgot-password"
-                  underline="hover"
-                  variant="body2"
-                >
-                  Reset Password
-                </Link>
-              </Stack>
             </Box>
           </CardContent>
         </Card>

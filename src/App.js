@@ -19,6 +19,7 @@ import SchoolManagement from "./pages/SchoolManagement/SchoolManagement";
 import PlanManagement from "./pages/PlanManagement/PlanManagement";
 import InvoiceManagement from "./pages/InvoiceManagement/InvoiceManagement";
 import UsageMonitoring from "./pages/UsageMonitoring/UsageMonitoring";
+import AdminSignup from "./pages/auth/AdminSignup";
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
       <Router>
         <Routes>
           {/* Public Routes - no layout */}
+          <Route path="/Signup" element={<AdminSignup />} />
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />

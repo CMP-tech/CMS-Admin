@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import axios from "axios";
+import axiosInstance from "../../api/axiosInstance";
 import {
   Box,
   Button,
@@ -9,21 +9,42 @@ import {
   Paper,
 } from "@mui/material";
 
-export default function ForgotPassword() {
-  const [email, setEmail] = useState("");
+export default function ChangePassword() {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async () => {
+  const handleChangePassword = async () => {
     setMessage("");
     setError("");
+
+    if (!currentPassword || !newPassword) {
+      setError("Please enter both current and new passwords.");
+      return;
+    }
+
+    setLoading(true);
     try {
-      const response = await axios.post("/api/auth/forgot-password", { email });
-      if (response.status === 200) {
-        setMessage("A password reset link has been sent to your email.");
+      const response = await axiosInstance.put("/api/admin/change-password", {
+        currentPassword,
+        newPassword,
+      });
+
+      if (response?.data?.message) {
+        setMessage(response.data.message);
+      } else {
+        setMessage("Password changed successfully.");
       }
     } catch (err) {
-      setError("Failed to send reset link. Please try again.");
+      console.error(err);
+      setError(
+        err.response?.data?.message ||
+          "Failed to change password. Please try again."
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -48,7 +69,7 @@ export default function ForgotPassword() {
           gutterBottom
           textAlign="center"
         >
-          Forgot Password
+          Change Password
         </Typography>
 
         {message && (
@@ -64,21 +85,31 @@ export default function ForgotPassword() {
 
         <TextField
           fullWidth
-          label="Email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="admin@example.com"
+          label="Current Password"
+          type="password"
+          value={currentPassword}
+          onChange={(e) => setCurrentPassword(e.target.value)}
+          sx={{ mb: 2 }}
+          disabled={loading}
+        />
+        <TextField
+          fullWidth
+          label="New Password"
+          type="password"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
           sx={{ mb: 3 }}
+          disabled={loading}
         />
 
         <Button
           variant="contained"
           color="primary"
           fullWidth
-          onClick={handleSubmit}
+          onClick={handleChangePassword}
+          disabled={loading}
         >
-          Send Reset Link
+          {loading ? "Changing..." : "Change Password"}
         </Button>
       </Paper>
     </Box>
