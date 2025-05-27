@@ -26,12 +26,16 @@ export default function AdminLogin() {
     setLoading(true);
 
     try {
-      const response = await axiosInstance.post("/api/admin/login", {
+      const response = await axiosInstance.post("api/admin/login", {
         email,
         password,
       });
 
-      localStorage.setItem("token", response.token);
+      const token = response?.data?.token;
+
+      if (!token) throw new Error("No token received");
+
+      localStorage.setItem("adminToken", token); // ✅ Consistent token key
 
       navigate("/admin/dashboard");
     } catch (err) {
@@ -39,6 +43,16 @@ export default function AdminLogin() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await axiosInstance.post("api/admin/logout");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+    localStorage.removeItem("adminToken");
+    navigate("/admin/login");
   };
 
   const handleKeyPress = (e) => {
@@ -114,7 +128,6 @@ export default function AdminLogin() {
                 {loading ? "Signing in..." : "Login"}
               </Button>
 
-              {/* Forgot/Reset Password Links */}
               <Stack direction="row" justifyContent="space-between" mt={2}>
                 <Link
                   href="/admin/forgot-password"
@@ -124,11 +137,12 @@ export default function AdminLogin() {
                   Forgot Password?
                 </Link>
                 <Link
-                  href="/forgot-password"
+                  component="button"
+                  onClick={handleLogout}
                   underline="hover"
                   variant="body2"
                 >
-                  Reset Password
+                  Logout
                 </Link>
               </Stack>
             </Box>

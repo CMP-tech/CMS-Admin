@@ -20,6 +20,7 @@ import PlanManagement from "./pages/PlanManagement/PlanManagement";
 import InvoiceManagement from "./pages/InvoiceManagement/InvoiceManagement";
 import UsageMonitoring from "./pages/UsageMonitoring/UsageMonitoring";
 import AdminSignup from "./pages/auth/AdminSignup";
+import PrivateRoute from "./components/PrivateRoute";
 
 function App() {
   return (
@@ -27,31 +28,32 @@ function App() {
       <CssBaseline />
       <Router>
         <Routes>
-          {/* Public Routes - no layout */}
-          <Route path="/Signup" element={<AdminSignup />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="*" element={<NotFound />} />
-          {/* Protected Routes - with layout */}
-            <Route element={<Layout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/classes" element={<ClassesManagement />} />
-            <Route path="/academic-year" element={<Academicyear />} />
-            <Route path="/classes/details" element={<ClassDetail />} />
-            <Route path="/section" element={<SectionDetail />} />
-            <Route path="/data-upload" element={<DataUploadProcessor />} />
-            <Route path="/student-details" element={<StudentDetailsPage />} />
+  {/* Public Routes */}
+  <Route path="/Signup" element={<AdminSignup />} />
+  <Route path="/login" element={<Login />} />
+  <Route path="/forgot-password" element={<ForgotPassword />} />
+  <Route path="/reset-password" element={<ResetPassword />} />
+  <Route path="*" element={<NotFound />} />
 
-        {/* Admin Routes */}
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
-        <Route path="/admin/schools" element={<SchoolManagement />} />
-        <Route path="/admin/plans" element={<PlanManagement />} />
-        <Route path="/admin/invoices" element={<InvoiceManagement />} />
-        <Route path="/admin/usage" element={<UsageMonitoring />} />
-            
-          </Route>
-        </Routes>
+  {/* Protected Routes - requires valid JWT */}
+  <Route element={<PrivateRoute />}>
+    <Route element={<Layout />}>
+      <Route path="/" element={<Home />} />
+      <Route path="/classes" element={<ClassesManagement />} />
+      <Route path="/academic-year" element={<Academicyear />} />
+      <Route path="/classes/details" element={<ClassDetail />} />
+      <Route path="/section" element={<SectionDetail />} />
+      <Route path="/data-upload" element={<DataUploadProcessor />} />
+      <Route path="/student-details" element={<StudentDetailsPage />} />
+      <Route path="/admin/dashboard" element={<AdminDashboard />} />
+      <Route path="/admin/schools" element={<SchoolManagement />} />
+      <Route path="/admin/plans" element={<PlanManagement />} />
+      <Route path="/admin/invoices" element={<InvoiceManagement />} />
+      <Route path="/admin/usage" element={<UsageMonitoring />} />
+    </Route>
+  </Route>
+</Routes>
+
       </Router>
     </>
   );

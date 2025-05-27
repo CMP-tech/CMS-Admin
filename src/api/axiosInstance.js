@@ -9,10 +9,10 @@ const axiosInstance = axios.create({
   },
 });
 
-// Attach token from localStorage (if exists)
+// Request Interceptor
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("adminToken"); // ensure key is consistent
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -25,15 +25,17 @@ axiosInstance.interceptors.request.use(
   }
 );
 
+// Response Interceptor
 axiosInstance.interceptors.response.use(
   (response) => {
-    if (response.data && response.data.message) {
+    if (response?.data?.message) {
       console.log("Response received (backend message):", response.data.message);
     }
-    return response.data;
+    return response; // return full response for flexibility
   },
   (error) => {
-    console.error("Axios Response Error (Interceptor):", error.response || error.message);
+    const errMsg = error?.response?.data?.message || error.message || "Unknown error";
+    console.error("Axios Response Error:", errMsg);
     return Promise.reject(error);
   }
 );
