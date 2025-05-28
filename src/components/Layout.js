@@ -70,7 +70,10 @@ const Layout = () => {
   const handleMouseLeave = () => {
     setIsHovering(false);
   };
-
+const handleLogout = () => {
+  localStorage.removeItem("adminToken");
+  navigate("/login");
+};
   const handleMenuItemClick = (path) => {
     navigate(path);
     // Optionally close the drawer if it's not permanently open after navigation
@@ -290,49 +293,48 @@ const Layout = () => {
         <Divider />
 
         {/* User profile and logout section */}
-        <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 2 }}>
-          {open ? (
-            <>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                <Avatar sx={{ bgcolor: "primary.main" }}>
-                  {userData.avatar}
-                </Avatar>
-                <Box>
-                  <Typography variant="subtitle2" noWrap>
-                    {userData.name}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" noWrap>
-                    {userData.email}
-                  </Typography>
-                </Box>
-              </Box>
-              <ListItemButton
-                sx={{
-                  borderRadius: 1,
-                  justifyContent: "flex-start",
-                }}
-              >
-                <ListItemIcon sx={{ minWidth: 40 }}>
-                  <LogoutIcon color="error" />
-                </ListItemIcon>
-                <ListItemText primary="Logout" sx={{ color: "error.main" }} />
-              </ListItemButton>
-            </>
-          ) : (
-            <Stack spacing={2} alignItems="center">
-              <Tooltip title={userData.email} placement="right">
-                <Avatar sx={{ bgcolor: "primary.main", cursor: "pointer" }}>
-                  {userData.avatar}
-                </Avatar>
-              </Tooltip>
-              <Tooltip title="Logout" placement="right">
-                <IconButton color="error">
-                  <LogoutIcon />
-                </IconButton>
-              </Tooltip>
-            </Stack>
-          )}
+<Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 2 }}>
+  {open ? (
+    <>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+        <Avatar sx={{ bgcolor: "primary.main" }}>
+          {userData.avatar}
+        </Avatar>
+        <Box>
+          <Typography variant="subtitle2" noWrap>
+            {userData.name}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" noWrap>
+            {userData.email}
+          </Typography>
         </Box>
+      </Box>
+
+      <ListItemButton
+        onClick={handleLogout} // ✅ Attached
+        sx={{ borderRadius: 1, justifyContent: "flex-start" }}
+      >
+        <ListItemIcon sx={{ minWidth: 40 }}>
+          <LogoutIcon color="error" />
+        </ListItemIcon>
+        <ListItemText primary="Logout" sx={{ color: "error.main" }} />
+      </ListItemButton>
+    </>
+  ) : (
+    <Stack spacing={2} alignItems="center">
+      <Tooltip title={userData.email} placement="right">
+        <Avatar sx={{ bgcolor: "primary.main", cursor: "pointer" }}>
+          {userData.avatar}
+        </Avatar>
+      </Tooltip>
+      <Tooltip title="Logout" placement="right">
+        <IconButton color="error" onClick={handleLogout}> {/* ✅ Attached */}
+          <LogoutIcon />
+        </IconButton>
+      </Tooltip>
+    </Stack>
+  )}
+</Box>
       </Drawer>
 
       {/* Main content area */}

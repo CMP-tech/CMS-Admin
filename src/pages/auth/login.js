@@ -52,7 +52,7 @@ export default function AdminLogin() {
       console.error("Logout error:", error);
     }
     localStorage.removeItem("adminToken");
-    navigate("/admin/login");
+    navigate("/login");
   };
 
   const handleKeyPress = (e) => {
