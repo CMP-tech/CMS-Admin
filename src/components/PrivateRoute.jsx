@@ -8,7 +8,7 @@ const PrivateRoute = () => {
   // Basic token format check: Must have 3 parts
   if (!token || token.split(".").length !== 3) {
     localStorage.removeItem("adminToken");
-    return <Navigate to="/admin/login" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   try {
@@ -18,14 +18,14 @@ const PrivateRoute = () => {
     if (decoded.exp < currentTime) {
       // Token expired
       localStorage.removeItem("adminToken");
-      return <Navigate to="/admin/login" replace />;
+      return <Navigate to="/login" replace />;
     }
 
     return <Outlet />;
   } catch (error) {
     console.error("Invalid token", error);
     localStorage.removeItem("adminToken");
-    return <Navigate to="/admin/login" replace />;
+    return <Navigate to="/login" replace />;
   }
 };
 

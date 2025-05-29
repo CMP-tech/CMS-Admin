@@ -35,7 +35,7 @@ export default function AdminSignup() {
 
       if (response.status === 201) {
         // Signup successful, navigate to login
-        navigate("admin/login");
+        navigate("/login");
       } else {
         setError("Signup failed. Please try again.");
       }

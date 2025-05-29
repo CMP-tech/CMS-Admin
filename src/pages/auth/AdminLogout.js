@@ -14,7 +14,7 @@ export default function AdminLogout() {
       }
 
       localStorage.removeItem("token");
-      navigate("/admin/login");
+      navigate("/login");
     };
 
     logout();
