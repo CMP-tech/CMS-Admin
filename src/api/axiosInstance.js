@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:5000"; // Removed trailing slash for safety
+const API_BASE_URL = "https://examli-be.onrender.com"; // Removed trailing slash for safety
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
