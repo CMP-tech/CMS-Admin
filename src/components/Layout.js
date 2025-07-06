@@ -1,13 +1,13 @@
-import React, { useState } from "react";
+import React, { useEffect } from "react";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 
 import SchoolIcon from "@mui/icons-material/School";
 import DashboardIcon from "@mui/icons-material/Dashboard";
-
 import PaymentIcon from "@mui/icons-material/Payment";
 import BarChartIcon from "@mui/icons-material/BarChart";
-
 import ApartmentIcon from "@mui/icons-material/Apartment";
+import SettingsIcon from "@mui/icons-material/Settings";
+import LogoutIcon from "@mui/icons-material/Logout";
 
 import {
   Box,
@@ -21,21 +21,11 @@ import {
   ListItemIcon,
   ListItemText,
   Divider,
-  IconButton,
   Avatar,
-  Stack,
-  Tooltip,
   useTheme,
 } from "@mui/material";
-import MenuIcon from "@mui/icons-material/Menu";
-import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-
-import SettingsIcon from "@mui/icons-material/Settings";
-
-import LogoutIcon from "@mui/icons-material/Logout";
 
 import logo from "../assets/logo-website-orange.png";
-import logoSideBar from "../assets/logo-website-white.png";
 
 const drawerWidth = 240;
 
@@ -44,48 +34,29 @@ const Layout = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // State to manage if the drawer is "permanently" open (clicked open)
-  const [isPermanentlyOpen, setIsPermanentlyOpen] = useState(false);
-  // State to manage if the mouse is currently hovering over the drawer
-  const [isHovering, setIsHovering] = useState(false);
-
-  // The actual 'open' state for the drawer will be true if it's permanently open,
-  // or if it's not permanently open but the user is hovering.
-  const open = isPermanentlyOpen || (isHovering && !isPermanentlyOpen);
+  const open = true;
 
   const currentPath = location.pathname;
 
-  const handleDrawerOpen = () => {
-    setIsPermanentlyOpen(true);
+  const adminDetails = JSON.parse(localStorage.getItem("adminDetails")) || {
+    name: "Admin",
+    email: "admin@example.com",
+    avatar: "A",
   };
 
-  const handleDrawerClose = () => {
-    setIsPermanentlyOpen(false);
+  useEffect(() => {
+    const token = localStorage.getItem("adminToken");
+    if (!token || !adminDetails) navigate("/login");
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("adminToken");
+    localStorage.removeItem("adminDetails");
+    navigate("/login");
   };
 
-  const handleMouseEnter = () => {
-    setIsHovering(true);
-  };
-
-  const handleMouseLeave = () => {
-    setIsHovering(false);
-  };
-const handleLogout = () => {
-  localStorage.removeItem("adminToken");
-  navigate("/login");
-};
   const handleMenuItemClick = (path) => {
     navigate(path);
-    // Optionally close the drawer if it's not permanently open after navigation
-    // if (!isPermanentlyOpen) {
-    //   setIsHovering(false);
-    // }
-  };
-
-  const userData = {
-    name: "John Doe",
-    email: "john.doe@example.com",
-    avatar: "JD",
   };
 
   const menuItems = [
@@ -104,42 +75,20 @@ const handleLogout = () => {
         position="fixed"
         sx={{
           zIndex: theme.zIndex.drawer + 1,
-          transition: theme.transitions.create(["width", "margin"], {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.leavingScreen,
-          }),
-          ...(open && {
-            marginLeft: drawerWidth,
-            width: `calc(100% - ${drawerWidth}px)`,
-            transition: theme.transitions.create(["width", "margin"], {
-              easing: theme.transitions.easing.sharp,
-              duration: theme.transitions.duration.enteringScreen,
-            }),
-          }),
+          marginLeft: drawerWidth,
+          width: `calc(100% - ${drawerWidth}px)`,
         }}
       >
         <Toolbar>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            onClick={handleDrawerOpen}
-            edge="start"
-            sx={{
-              marginRight: 5,
-              ...(open && { display: "none" }),
-            }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Box sx={{ display: "flex", alignItems: "center" }}>
-            <Box
-              component="img"
-              sx={{
-                height: 40,
-              }}
-              alt="Logo"
-              src={logoSideBar}
-            />
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Avatar sx={{ bgcolor: "primary.main" }}>
+              {adminDetails.avatar}
+            </Avatar>
+            <Box sx={{ display: "flex", flexDirection: "column" }}>
+              <Typography variant="subtitle2" color="inherit" noWrap>
+                {adminDetails.name}
+              </Typography>
+            </Box>
           </Box>
         </Toolbar>
       </AppBar>
@@ -147,9 +96,7 @@ const handleLogout = () => {
       {/* Sidebar */}
       <Drawer
         variant="permanent"
-        open={open} // Now derived from isPermanentlyOpen and isHovering
-        onMouseEnter={handleMouseEnter} // Add mouse enter event
-        onMouseLeave={handleMouseLeave} // Add mouse leave event
+        open={true}
         sx={{
           width: drawerWidth,
           flexShrink: 0,
@@ -157,22 +104,6 @@ const handleLogout = () => {
             width: drawerWidth,
             boxSizing: "border-box",
             whiteSpace: "nowrap",
-            transition: theme.transitions.create("width", {
-              easing: theme.transitions.easing.sharp,
-              duration: theme.transitions.duration.enteringScreen,
-            }),
-            ...(open
-              ? {
-                  overflowX: "hidden",
-                  width: drawerWidth,
-                }
-              : {
-                  overflowX: "hidden",
-                  width: theme.spacing(7),
-                  [theme.breakpoints.up("sm")]: {
-                    width: theme.spacing(9),
-                  },
-                }),
             display: "flex",
             flexDirection: "column",
             height: "100%",
@@ -180,64 +111,35 @@ const handleLogout = () => {
           },
         }}
       >
-        {/* Drawer header with logo */}
+        {/* Drawer header */}
         <Box
           sx={{
             display: "flex",
             alignItems: "center",
-            justifyContent: open ? "space-between" : "center",
+            justifyContent: "space-between",
             p: 2,
           }}
         >
-          {open && (
-            <Box sx={{ display: "flex", alignItems: "center" }}>
-              <Box
-                component="img"
-                sx={{
-                  height: 40,
-                }}
-                alt="Logo"
-                src={logo}
-              />
-            </Box>
-          )}
-          {/* Show a placeholder logo when collapsed if you prefer */}
-          {!open && (
-            <Box
-              component="img"
-              sx={{
-                height: 32,
-                width: 32,
-              }}
-              alt="Logo"
-              src={logoSideBar}
-            />
-          )}
-          {/* Close button only visible when drawer is open */}
-          {open && (
-            <IconButton onClick={handleDrawerClose}>
-              <ChevronLeftIcon />
-            </IconButton>
-          )}
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <Box component="img" sx={{ height: 40 }} alt="Logo" src={logo} />
+          </Box>
         </Box>
+
         <Divider />
-        <List sx={{ flexGrow: 0 }}>
-          {menuItems.map((item, index) => {
+
+        <List>
+          {menuItems.map((item) => {
             const isActive =
               currentPath === item.path ||
               (item.path !== "/" && currentPath.startsWith(item.path));
 
             return (
-              <ListItem
-                key={item.text}
-                disablePadding
-                sx={{ display: "block" }}
-              >
+              <ListItem key={item.text} disablePadding sx={{ display: "block" }}>
                 <ListItemButton
                   onClick={() => handleMenuItemClick(item.path)}
                   sx={{
                     minHeight: 48,
-                    justifyContent: open ? "initial" : "center",
+                    justifyContent: "initial",
                     px: 2.5,
                     backgroundColor: isActive
                       ? "rgba(25, 118, 210, 0.08)"
@@ -264,7 +166,7 @@ const handleLogout = () => {
                   <ListItemIcon
                     sx={{
                       minWidth: 0,
-                      mr: open ? 3 : "auto",
+                      mr: 3,
                       justifyContent: "center",
                       color: isActive ? "primary.main" : "inherit",
                     }}
@@ -274,7 +176,6 @@ const handleLogout = () => {
                   <ListItemText
                     primary={item.text}
                     sx={{
-                      opacity: open ? 1 : 0,
                       color: isActive ? "primary.main" : "inherit",
                       "& .MuiTypography-root": {
                         fontWeight: isActive ? "bold" : "regular",
@@ -287,62 +188,41 @@ const handleLogout = () => {
           })}
         </List>
 
-        {/* Spacer to push profile to bottom */}
         <Box sx={{ flexGrow: 1 }} />
 
         <Divider />
 
-        {/* User profile and logout section */}
-<Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 2 }}>
-  {open ? (
-    <>
-      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-        <Avatar sx={{ bgcolor: "primary.main" }}>
-          {userData.avatar}
-        </Avatar>
-        <Box>
-          <Typography variant="subtitle2" noWrap>
-            {userData.name}
-          </Typography>
-          <Typography variant="body2" color="text.secondary" noWrap>
-            {userData.email}
-          </Typography>
-        </Box>
-      </Box>
+        <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 2 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Avatar sx={{ bgcolor: "primary.main" }}>{adminDetails.avatar}</Avatar>
+            <Box>
+              <Typography variant="subtitle2" noWrap>
+                {adminDetails.name}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" noWrap>
+                {adminDetails.email}
+              </Typography>
+            </Box>
+          </Box>
 
-      <ListItemButton
-        onClick={handleLogout} // ✅ Attached
-        sx={{ borderRadius: 1, justifyContent: "flex-start" }}
-      >
-        <ListItemIcon sx={{ minWidth: 40 }}>
-          <LogoutIcon color="error" />
-        </ListItemIcon>
-        <ListItemText primary="Logout" sx={{ color: "error.main" }} />
-      </ListItemButton>
-    </>
-  ) : (
-    <Stack spacing={2} alignItems="center">
-      <Tooltip title={userData.email} placement="right">
-        <Avatar sx={{ bgcolor: "primary.main", cursor: "pointer" }}>
-          {userData.avatar}
-        </Avatar>
-      </Tooltip>
-      <Tooltip title="Logout" placement="right">
-        <IconButton color="error" onClick={handleLogout}> {/* ✅ Attached */}
-          <LogoutIcon />
-        </IconButton>
-      </Tooltip>
-    </Stack>
-  )}
-</Box>
+          <ListItemButton
+            onClick={handleLogout}
+            sx={{ borderRadius: 1, justifyContent: "flex-start" }}
+          >
+            <ListItemIcon sx={{ minWidth: 40 }}>
+              <LogoutIcon color="error" />
+            </ListItemIcon>
+            <ListItemText primary="Logout" sx={{ color: "error.main" }} />
+          </ListItemButton>
+        </Box>
       </Drawer>
 
-      {/* Main content area */}
+      {/* Main content */}
       <Box
         component="main"
         sx={{
           width: "100%",
-          mt: "64px", // To avoid content being hidden under AppBar
+          mt: "64px",
         }}
       >
         <Outlet />

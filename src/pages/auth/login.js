@@ -31,11 +31,12 @@ export default function AdminLogin() {
         password,
       });
 
-      const token = response?.data?.token;
+      const { token, admin } = response?.data;
 
-      if (!token) throw new Error("No token received");
+      if (!token || !admin) throw new Error("Missing token or admin info");
 
-      localStorage.setItem("adminToken", token); // ✅ Consistent token key
+      localStorage.setItem("adminToken", token);
+      localStorage.setItem("adminDetails", JSON.stringify(admin));
 
       navigate("/admin/dashboard");
     } catch (err) {
@@ -45,15 +46,6 @@ export default function AdminLogin() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await axiosInstance.post("api/admin/logout");
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
-    localStorage.removeItem("adminToken");
-    navigate("/login");
-  };
 
   const handleKeyPress = (e) => {
     if (e.key === "Enter") handleLogin();
@@ -136,14 +128,7 @@ export default function AdminLogin() {
                 >
                   Forgot Password?
                 </Link>
-                <Link
-                  component="button"
-                  onClick={handleLogout}
-                  underline="hover"
-                  variant="body2"
-                >
-                  Logout
-                </Link>
+                
               </Stack>
             </Box>
           </CardContent>

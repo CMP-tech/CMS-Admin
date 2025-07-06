@@ -4,6 +4,7 @@ import {
   TextField, MenuItem, Paper, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, IconButton, Tooltip, Snackbar, Alert,
 } from '@mui/material';
+import AccessTimeIcon from '@mui/icons-material/AccessTime'; // ⬅️ Add at top with other MUI imports
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { Pause, PlayArrow } from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
@@ -13,7 +14,7 @@ import axiosInstance from '../../api/axiosInstance';
 import { CitySelect, CountrySelect, StateSelect } from 'react-country-state-city';
 import "react-country-state-city/dist/react-country-state-city.css";
 
-// Validation Schema
+// Validation Schema (plan removed)
 const schema = Yup.object().shape({
   schoolName: Yup.string().required('School name is required'),
   country: Yup.string().required('Country is required'),
@@ -24,24 +25,17 @@ const schema = Yup.object().shape({
   contactPerson: Yup.string().required('Contact person is required'),
   email: Yup.string().email('Invalid email').required('Email is required'),
   contactNumber: Yup.string().required('Contact number is required'),
-  plan: Yup.string().required('Plan is required'),
   status: Yup.string().required('Status is required'),
 });
 
-// Plan and status options
-const planOptions = [
-  { label: 'Free', value: 'Free' },
-  { label: 'Standard', value: 'Standard' },
-  { label: 'Premium', value: 'Premium' },
-];
-
 const statusOptions = [
-  { label: 'Active', value: 'Active' },
-  { label: 'Suspended', value: 'Suspended' },
+  { label: 'Active', value: 'active' },
+  { label: 'Suspended', value: 'suspended' },
 ];
 
 export default function SchoolManagement() {
   const [schools, setSchools] = useState([]);
+  const [counts, setCounts] = useState({ total: 0, active: 0, suspended: 0 });
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
@@ -51,17 +45,24 @@ export default function SchoolManagement() {
   const [cityId, setCityId] = useState(0);
 
   const {
-    control, handleSubmit, reset, setValue, watch,
+    control, handleSubmit, reset, setValue,
     formState: { errors },
   } = useForm({ resolver: yupResolver(schema) });
 
   const fetchSchools = async () => {
     try {
       const res = await axiosInstance.get('api/schools/get-school');
-      console.log('Schools fetched:', res.data);
-      setSchools(res.data);
+      const { schools, counts } = res.data;
+
+      if (Array.isArray(schools)) {
+        setSchools(schools);
+      } else {
+        setSchools([]);
+      }
+
+      setCounts(counts || { total: 0, active: 0, suspended: 0 });
     } catch (err) {
-      console.error('Fetch schools error:', err.response || err.message || err);
+      console.error('Fetch schools error:', err);
       setSnackbar({ open: true, message: 'Failed to fetch schools', severity: 'error' });
     }
   };
@@ -76,9 +77,6 @@ export default function SchoolManagement() {
       Object.keys(school).forEach((key) => {
         if (key !== '_id') setValue(key, school[key]);
       });
-      // For editing, if you want to pre-select the dropdowns, it's more involved.
-      // You'd need to find the ID for the stored country/state/city names.
-      // For simplicity in this example, we'll let the user re-select these.
     } else {
       reset();
       setEditId(null);
@@ -100,18 +98,15 @@ export default function SchoolManagement() {
   const onSubmit = async (data) => {
     try {
       if (editId) {
-        console.log('Updating school with id:', editId, data);
         await axiosInstance.put(`/api/schools/${editId}`, data);
         setSnackbar({ open: true, message: 'School updated successfully', severity: 'success' });
       } else {
-        console.log('Adding new school:', data);
         await axiosInstance.post('/api/schools', data);
         setSnackbar({ open: true, message: 'School added successfully', severity: 'success' });
       }
       fetchSchools();
       handleClose();
     } catch (error) {
-      console.error('Submit error:', error.response || error);
       setSnackbar({
         open: true,
         message: error.response?.data?.message || 'Something went wrong',
@@ -126,100 +121,117 @@ export default function SchoolManagement() {
       fetchSchools();
       setSnackbar({ open: true, message: 'School deleted', severity: 'success' });
     } catch (err) {
-      console.error('Delete error:', err);
       setSnackbar({ open: true, message: 'Failed to delete', severity: 'error' });
     }
   };
 
-  // --- MODIFIED Function for Toggling Status ---
-const handleStatusToggle = async (school) => {
-  try {
-    const newStatus = school.status === 'active' ? 'suspended' : 'active';
-    
-    await axiosInstance.patch(`/api/schools/${school._id}/status`, { 
-      status: newStatus 
-    });
+  const handleStatusToggle = async (school) => {
+    try {
+      const newStatus = school.status === 'active' ? 'suspended' : 'active';
 
-    fetchSchools(); // Refresh the list
-    setSnackbar({
-      open: true,
-      message: `School status updated to ${newStatus}`,
-      severity: 'success'
-    });
-  } catch (err) {
-    setSnackbar({
-      open: true,
-      message: err.response?.data?.message || 'Failed to update status',
-      severity: 'error'
-    });
-  }
-};
-  // -----------------------------------------
+      await axiosInstance.patch(`/api/schools/${school._id}/status`, {
+        status: newStatus,
+      });
+
+      fetchSchools();
+      setSnackbar({
+        open: true,
+        message: `School status updated to ${newStatus}`,
+        severity: 'success',
+      });
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.message || 'Failed to update status',
+        severity: 'error',
+      });
+    }
+  };
 
   return (
     <Box sx={{ p: 4 }}>
       <Typography variant="h4" gutterBottom>School Management</Typography>
+
+      {/* Counts Section */}
+      <Box sx={{ mb: 2 }}>
+        <Typography variant="body1">
+          Total: <strong>{counts.total}</strong> | Active: <strong>{counts.active}</strong> | Suspended: <strong>{counts.suspended}</strong>
+        </Typography>
+      </Box>
+
       <Button variant="contained" startIcon={<Add />} onClick={() => handleOpen()}>Add School</Button>
 
       {/* Table */}
       <TableContainer component={Paper} sx={{ mt: 3 }}>
         <Table>
           <TableHead>
-            <TableRow>
-              <TableCell>School Name</TableCell>
-              <TableCell>Contact</TableCell>
-              <TableCell>City</TableCell>
-              <TableCell>State</TableCell>
-              <TableCell>Country</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Plan</TableCell>
-              <TableCell align="center">Actions</TableCell>
-            </TableRow>
-          </TableHead>
+  <TableRow>
+    <TableCell>School Name</TableCell>
+    <TableCell>Contact</TableCell>
+    <TableCell>City</TableCell>
+    <TableCell>State</TableCell>
+    <TableCell>Country</TableCell>
+    <TableCell>Status</TableCell>
+    <TableCell>Last Logged In</TableCell> {/* ✅ Add this line */}
+    <TableCell align="center">Actions</TableCell>
+  </TableRow>
+</TableHead>
+
           <TableBody>
             {schools.map((school) => (
               <TableRow key={school._id}>
                 <TableCell>{school.schoolName}</TableCell>
                 <TableCell>{school.contactPerson} ({school.contactNumber})</TableCell>
                 <TableCell>{school.city}</TableCell>
-                <TableCell>{school.state}</TableCell>
+                <TableCell>{school.pincode}</TableCell>
                 <TableCell>{school.country}</TableCell>
                 <TableCell>{school.status}</TableCell>
-                <TableCell>{school.plan}</TableCell>
- {/* <TableCell>
-    {school.status === 'active' ? 'Active' : 'Suspended'}
-  </TableCell> */}
-  {/* ... other cells ... */}
-  <TableCell align="center">
-    <Tooltip title="Edit">
-      <IconButton onClick={() => handleOpen(school)}><Edit /></IconButton>
-    </Tooltip>
-    <Tooltip title="Delete">
-      <IconButton onClick={() => handleDelete(school._id)}><Delete /></IconButton>
-    </Tooltip>
-    
-    {/* Status Toggle Button */}
-    <Button
-      variant="contained"
-      size="small"
-      color={school.status === 'active' ? 'warning' : 'success'}
-      onClick={() => handleStatusToggle(school)}
-      startIcon={school.status === 'active' ? <Pause /> : <PlayArrow />}
-      sx={{ ml: 1, textTransform: 'none' }}
-    >
-      {school.status === 'active' ? 'Suspend' : 'Activate'}
-    </Button>
-  </TableCell>
-</TableRow>
+                 <TableCell>
+  {school.lastLoggedIn ? (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <AccessTimeIcon fontSize="small" color="action" />
+      <Box>
+        <Typography variant="body2" fontWeight={500}>
+          {new Date(school.lastLoggedIn).toLocaleDateString()}
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          {new Date(school.lastLoggedIn).toLocaleTimeString()}
+        </Typography>
+      </Box>
+    </Box>
+  ) : (
+    <Typography variant="body2" color="text.disabled">Never</Typography>
+  )}
+</TableCell>
+
+                <TableCell align="center">
+                  <Tooltip title="Edit">
+                    <IconButton onClick={() => handleOpen(school)}><Edit /></IconButton>
+                  </Tooltip>
+                  <Tooltip title="Delete">
+                    <IconButton onClick={() => handleDelete(school._id)}><Delete /></IconButton>
+                  </Tooltip>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    color={school.status === 'active' ? 'warning' : 'success'}
+                    onClick={() => handleStatusToggle(school)}
+                    startIcon={school.status === 'active' ? <Pause /> : <PlayArrow />}
+                    sx={{ ml: 1, textTransform: 'none' }}
+                  >
+                    {school.status === 'active' ? 'Suspend' : 'Activate'}
+                  </Button>
+                </TableCell>
+              </TableRow>
             ))}
             {schools.length === 0 && (
-              <TableRow><TableCell colSpan={8} align="center">No schools found.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} align="center">No schools found.</TableCell></TableRow>
             )}
           </TableBody>
         </Table>
       </TableContainer>
 
-      {/* Dialog Form */}
+      {/* Dialog */}
       <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
         <DialogTitle>{editId ? 'Edit School' : 'Add School'}</DialogTitle>
         <DialogContent dividers>
@@ -291,7 +303,7 @@ const handleStatusToggle = async (school) => {
             />
             {errors.city && <Typography color="error" variant="caption">{errors.city.message}</Typography>}
 
-            {/* Pincode TextField */}
+            {/* Pincode */}
             <Controller
               name="pincode"
               control={control}
@@ -308,6 +320,7 @@ const handleStatusToggle = async (school) => {
               )}
             />
 
+            {/* Address, Contact, Email */}
             <Controller
               name="address"
               control={control}
@@ -369,27 +382,7 @@ const handleStatusToggle = async (school) => {
                 />
               )}
             />
-            <Controller
-              name="plan"
-              control={control}
-              defaultValue=""
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  select
-                  margin="dense"
-                  label="Plan"
-                  fullWidth
-                  error={!!errors.plan}
-                  helperText={errors.plan?.message}
-                >
-                  {planOptions.map((opt) => (
-                    <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
-                  ))}
-                </TextField>
-              )}
-            />
-            {/* The status field in the form itself will still be a dropdown */}
+            {/* Status */}
             <Controller
               name="status"
               control={control}
