@@ -8,6 +8,7 @@ import BarChartIcon from "@mui/icons-material/BarChart";
 import ApartmentIcon from "@mui/icons-material/Apartment";
 import SettingsIcon from "@mui/icons-material/Settings";
 import LogoutIcon from "@mui/icons-material/Logout";
+import ContactMailIcon from "@mui/icons-material/ContactMail";
 
 import {
   Box,
@@ -65,6 +66,11 @@ const Layout = () => {
     { text: "Plans", icon: <SchoolIcon />, path: "/admin/plans" },
     { text: "Invoices", icon: <PaymentIcon />, path: "/admin/invoices" },
     { text: "Usage", icon: <BarChartIcon />, path: "/admin/usage" },
+    {
+      text: "Contact requests ",
+      icon: <ContactMailIcon />,
+      path: "/admin/contact-request",
+    },
     { text: "Settings", icon: <SettingsIcon />, path: "/settings" },
   ];
 
@@ -134,7 +140,11 @@ const Layout = () => {
               (item.path !== "/" && currentPath.startsWith(item.path));
 
             return (
-              <ListItem key={item.text} disablePadding sx={{ display: "block" }}>
+              <ListItem
+                key={item.text}
+                disablePadding
+                sx={{ display: "block" }}
+              >
                 <ListItemButton
                   onClick={() => handleMenuItemClick(item.path)}
                   sx={{
@@ -194,7 +204,9 @@ const Layout = () => {
 
         <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 2 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <Avatar sx={{ bgcolor: "primary.main" }}>{adminDetails.avatar}</Avatar>
+            <Avatar sx={{ bgcolor: "primary.main" }}>
+              {adminDetails.avatar}
+            </Avatar>
             <Box>
               <Typography variant="subtitle2" noWrap>
                 {adminDetails.name}
