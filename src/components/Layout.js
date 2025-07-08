@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 
 import SchoolIcon from "@mui/icons-material/School";
@@ -7,6 +7,8 @@ import PaymentIcon from "@mui/icons-material/Payment";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import ApartmentIcon from "@mui/icons-material/Apartment";
 import SettingsIcon from "@mui/icons-material/Settings";
+import ExpandLess from "@mui/icons-material/ExpandLess";
+import ExpandMore from "@mui/icons-material/ExpandMore";
 import LogoutIcon from "@mui/icons-material/Logout";
 import ContactMailIcon from "@mui/icons-material/ContactMail";
 
@@ -24,6 +26,7 @@ import {
   Divider,
   Avatar,
   useTheme,
+  Collapse,
 } from "@mui/material";
 
 import logo from "../assets/logo-website-orange.png";
@@ -35,9 +38,9 @@ const Layout = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const open = true;
-
   const currentPath = location.pathname;
+
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const adminDetails = JSON.parse(localStorage.getItem("adminDetails")) || {
     name: "Admin",
@@ -71,12 +74,24 @@ const Layout = () => {
       icon: <ContactMailIcon />,
       path: "/admin/contact-request",
     },
-    { text: "Settings", icon: <SettingsIcon />, path: "/settings" },
+    {
+      text: "Settings",
+      icon: <SettingsIcon />,
+      children: [
+        {
+          text: "Social Media",
+          path: "/settings/social-media",
+        },
+        {
+          text: "Copyright",
+          path: "/settings/copyright",
+        },
+      ],
+    },
   ];
 
   return (
     <Box sx={{ display: "flex", background: "#F5F5F5" }}>
-      {/* App Bar */}
       <AppBar
         position="fixed"
         sx={{
@@ -99,10 +114,8 @@ const Layout = () => {
         </Toolbar>
       </AppBar>
 
-      {/* Sidebar */}
       <Drawer
         variant="permanent"
-        open={true}
         sx={{
           width: drawerWidth,
           flexShrink: 0,
@@ -117,7 +130,6 @@ const Layout = () => {
           },
         }}
       >
-        {/* Drawer header */}
         <Box
           sx={{
             display: "flex",
@@ -135,65 +147,125 @@ const Layout = () => {
 
         <List>
           {menuItems.map((item) => {
-            const isActive =
-              currentPath === item.path ||
-              (item.path !== "/" && currentPath.startsWith(item.path));
+            const isActive = currentPath === item.path;
+            const isSettings = item.text === "Settings";
 
-            return (
-              <ListItem
-                key={item.text}
-                disablePadding
-                sx={{ display: "block" }}
-              >
-                <ListItemButton
-                  onClick={() => handleMenuItemClick(item.path)}
-                  sx={{
-                    minHeight: 48,
-                    justifyContent: "initial",
-                    px: 2.5,
-                    backgroundColor: isActive
-                      ? "rgba(25, 118, 210, 0.08)"
-                      : "transparent",
-                    position: "relative",
-                    "&:hover": {
-                      backgroundColor: isActive
-                        ? "rgba(25, 118, 210, 0.12)"
-                        : "rgba(0, 0, 0, 0.04)",
-                    },
-                    ...(isActive && {
-                      "&::before": {
-                        content: '""',
-                        position: "absolute",
-                        left: 0,
-                        top: 0,
-                        height: "100%",
-                        width: "4px",
-                        backgroundColor: "primary.main",
-                      },
-                    }),
-                  }}
+            if (!item.children) {
+              return (
+                <ListItem
+                  key={item.text}
+                  disablePadding
+                  sx={{ display: "block" }}
                 >
-                  <ListItemIcon
+                  <ListItemButton
+                    onClick={() => handleMenuItemClick(item.path)}
                     sx={{
-                      minWidth: 0,
-                      mr: 3,
-                      justifyContent: "center",
-                      color: isActive ? "primary.main" : "inherit",
+                      minHeight: 48,
+                      justifyContent: "initial",
+                      px: 2.5,
+                      backgroundColor: isActive
+                        ? "rgba(25, 118, 210, 0.08)"
+                        : "transparent",
+                      "&:hover": {
+                        backgroundColor: "rgba(0, 0, 0, 0.04)",
+                      },
                     }}
                   >
-                    {item.icon}
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={item.text}
+                    <ListItemIcon
+                      sx={{
+                        minWidth: 0,
+                        mr: 3,
+                        justifyContent: "center",
+                        color: isActive ? "primary.main" : "inherit",
+                      }}
+                    >
+                      {item.icon}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={item.text}
+                      sx={{
+                        color: isActive ? "primary.main" : "inherit",
+                        "& .MuiTypography-root": {
+                          fontWeight: isActive ? "bold" : "regular",
+                        },
+                      }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              );
+            }
+
+            // Settings with children (dropdown)
+            return (
+              <React.Fragment key={item.text}>
+                <ListItem disablePadding sx={{ display: "block" }}>
+                  <ListItemButton
+                    onClick={() => setSettingsOpen((prev) => !prev)}
                     sx={{
-                      color: isActive ? "primary.main" : "inherit",
-                      "& .MuiTypography-root": {
-                        fontWeight: isActive ? "bold" : "regular",
+                      minHeight: 48,
+                      justifyContent: "initial",
+                      px: 2.5,
+                      "&:hover": {
+                        backgroundColor: "rgba(0, 0, 0, 0.04)",
                       },
                     }}
-                  />
-                </ListItemButton>
-              </ListItem>
+                  >
+                    <ListItemIcon
+                      sx={{
+                        minWidth: 0,
+                        mr: 3,
+                        justifyContent: "center",
+                      }}
+                    >
+                      {item.icon}
+                    </ListItemIcon>
+                    <ListItemText primary={item.text} />
+                    {settingsOpen ? <ExpandLess /> : <ExpandMore />}
+                  </ListItemButton>
+                </ListItem>
+
+                <Collapse in={settingsOpen} timeout="auto" unmountOnExit>
+                  <List component="div" disablePadding>
+                    {item.children.map((child) => {
+                      const isChildActive = currentPath === child.path;
+                      return (
+                        <ListItem
+                          key={child.text}
+                          disablePadding
+                          sx={{ pl: 4 }}
+                        >
+                          <ListItemButton
+                            onClick={() => handleMenuItemClick(child.path)}
+                            sx={{
+                              minHeight: 40,
+                              px: 2.5,
+                              backgroundColor: isChildActive
+                                ? "rgba(25, 118, 210, 0.1)"
+                                : "transparent",
+                              "&:hover": {
+                                backgroundColor: "rgba(0, 0, 0, 0.04)",
+                              },
+                            }}
+                          >
+                            <ListItemText
+                              primary={child.text}
+                              sx={{
+                                color: isChildActive
+                                  ? "primary.main"
+                                  : "inherit",
+                                "& .MuiTypography-root": {
+                                  fontSize: "0.9rem",
+                                  fontWeight: isChildActive ? "bold" : "normal",
+                                },
+                              }}
+                            />
+                          </ListItemButton>
+                        </ListItem>
+                      );
+                    })}
+                  </List>
+                </Collapse>
+              </React.Fragment>
             );
           })}
         </List>
@@ -229,14 +301,7 @@ const Layout = () => {
         </Box>
       </Drawer>
 
-      {/* Main content */}
-      <Box
-        component="main"
-        sx={{
-          width: "100%",
-          mt: "64px",
-        }}
-      >
+      <Box component="main" sx={{ width: "100%", mt: "64px" }}>
         <Outlet />
       </Box>
     </Box>

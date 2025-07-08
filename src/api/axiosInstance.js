@@ -30,12 +30,16 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
   (response) => {
     if (response?.data?.message) {
-      console.log("Response received (backend message):", response.data.message);
+      console.log(
+        "Response received (backend message):",
+        response.data.message
+      );
     }
     return response;
   },
   (error) => {
-    const errMsg = error?.response?.data?.message || error.message || "Unknown error";
+    const errMsg =
+      error?.response?.data?.message || error.message || "Unknown error";
     console.error("Axios Response Error:", error.response?.status, errMsg);
     return Promise.reject(error);
   }

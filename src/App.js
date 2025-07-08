@@ -22,6 +22,8 @@ import UsageMonitoring from "./pages/UsageMonitoring/UsageMonitoring";
 import AdminSignup from "./pages/auth/AdminSignup";
 import PrivateRoute from "./components/PrivateRoute";
 import ContactRequest from "./pages/contactRequest";
+import SocialMediaPage from "./pages/settings/SocialMediaPage";
+import CopyrightPage from "./pages/settings/CopyrightPage";
 
 function App() {
   return (
@@ -55,6 +57,11 @@ function App() {
                 path="/admin/contact-request"
                 element={<ContactRequest />}
               />
+              <Route
+                path="/settings/social-media"
+                element={<SocialMediaPage />}
+              />
+              <Route path="/settings/copyright" element={<CopyrightPage />} />
             </Route>
           </Route>
         </Routes>
