@@ -10,7 +10,7 @@ import {
 import axios from "../../api/axiosInstance"; // adjust the path if needed
 
 const CopyrightPage = () => {
-  const [copyrightMessage, setCopyrightMessage] = useState("");
+  const [copyright, setCopyrightMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [snack, setSnack] = useState({
     open: false,
@@ -21,8 +21,8 @@ const CopyrightPage = () => {
   const fetchSettings = async () => {
     try {
       const res = await axios.get("/api/settings");
-      if (res.data?.copyrightMessage) {
-        setCopyrightMessage(res.data.copyrightMessage);
+      if (res.data?.copyright) {
+        setCopyrightMessage(res.data.copyright);
       }
     } catch (error) {
       console.error("Error fetching settings:", error.message);
@@ -37,7 +37,7 @@ const CopyrightPage = () => {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      await axios.put("/api/settings", { copyrightMessage });
+      await axios.put("/api/settings", { copyright: copyright });
       setSnack({
         open: true,
         message: "Copyright updated successfully",
@@ -64,7 +64,7 @@ const CopyrightPage = () => {
       <TextField
         name="copyrightMessage"
         label="Copyright Message"
-        value={copyrightMessage}
+        value={copyright}
         onChange={(e) => setCopyrightMessage(e.target.value)}
         fullWidth
         multiline
