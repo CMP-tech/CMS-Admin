@@ -28,7 +28,7 @@ import {
   Collapse,
 } from "@mui/material";
 
-import logo from "../assets/logo-website-orange.png";
+import logo from "../assets/logo-cms.png";
 
 const drawerWidth = 240;
 
