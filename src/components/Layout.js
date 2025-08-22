@@ -1,16 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 
-import SchoolIcon from "@mui/icons-material/School";
 import DashboardIcon from "@mui/icons-material/Dashboard";
-import PaymentIcon from "@mui/icons-material/Payment";
-import BarChartIcon from "@mui/icons-material/BarChart";
-import ApartmentIcon from "@mui/icons-material/Apartment";
 import SettingsIcon from "@mui/icons-material/Settings";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import LogoutIcon from "@mui/icons-material/Logout";
 import ContactMailIcon from "@mui/icons-material/ContactMail";
+import ArticleIcon from "@mui/icons-material/Article";
+import CategoryIcon from "@mui/icons-material/Category";
+import TranslateIcon from "@mui/icons-material/Translate";
 
 import {
   Box,
@@ -37,21 +36,9 @@ const Layout = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
-
   const currentPath = location.pathname;
 
-  const [settingsOpen, setSettingsOpen] = useState(false);
-
-  const adminDetails = JSON.parse(localStorage.getItem("adminDetails")) || {
-    name: "Admin",
-    email: "admin@example.com",
-    avatar: "A",
-  };
-
-  useEffect(() => {
-    const token = localStorage.getItem("adminToken");
-    if (!token || !adminDetails) navigate("/login");
-  }, []);
+  const [openMenus, setOpenMenus] = useState({});
 
   const handleLogout = () => {
     localStorage.removeItem("adminToken");
@@ -63,57 +50,89 @@ const Layout = () => {
     navigate(path);
   };
 
+  const toggleMenu = (menuText) => {
+    setOpenMenus((prev) => ({
+      ...prev,
+      [menuText]: !prev[menuText],
+    }));
+  };
+
   const menuItems = [
     { text: "Dashboard", icon: <DashboardIcon />, path: "/admin/dashboard" },
-    { text: "Schools", icon: <ApartmentIcon />, path: "/admin/schools" },
-    { text: "Plans", icon: <SchoolIcon />, path: "/admin/plans" },
-    { text: "Invoices", icon: <PaymentIcon />, path: "/admin/invoices" },
-    { text: "Usage", icon: <BarChartIcon />, path: "/admin/usage" },
+
     {
-      text: "Contact requests ",
-      icon: <ContactMailIcon />,
-      path: "/admin/contact-request",
+      text: "All Posts",
+      icon: <ArticleIcon />,
+      children: [
+        { text: "Posts", path: "/admin/posts", icon: <ArticleIcon /> },
+        {
+          text: "Categories",
+          path: "/admin/categories",
+          icon: <CategoryIcon />,
+        },
+        {
+          text: "Languages",
+          path: "/admin/languages",
+          icon: <TranslateIcon />,
+        },
+      ],
     },
+
     {
       text: "Settings",
       icon: <SettingsIcon />,
       children: [
-        {
-          text: "Social Media",
-          path: "/settings/social-media",
-        },
-        {
-          text: "Copyright",
-          path: "/settings/copyright",
-        },
+        { text: "Social Media", path: "/settings/social-media" },
+        { text: "Copyright", path: "/settings/copyright" },
       ],
+    },
+
+    {
+      text: "Contact Requests",
+      icon: <ContactMailIcon />,
+      path: "/admin/contact-request",
     },
   ];
 
+  // Auto-expand a parent menu if a child path is active
+  useEffect(() => {
+    menuItems.forEach((item) => {
+      if (item.children) {
+        const hasActiveChild = item.children.some(
+          (child) => child.path === currentPath
+        );
+        if (hasActiveChild) {
+          setOpenMenus((prev) => ({ ...prev, [item.text]: true }));
+        }
+      }
+    });
+  }, [currentPath]);
+
   return (
-    <Box sx={{ display: "flex", background: "#F5F5F5" }}>
+    <Box sx={{ display: "flex" }}>
+      {/* Top AppBar */}
       <AppBar
         position="fixed"
         sx={{
           zIndex: theme.zIndex.drawer + 1,
           marginLeft: drawerWidth,
           width: `calc(100% - ${drawerWidth}px)`,
+          backgroundColor: "#0d2033ff",
         }}
       >
         <Toolbar>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <Avatar sx={{ bgcolor: "primary.main" }}>
-              {adminDetails.avatar}
-            </Avatar>
+            {/* <Avatar sx={{ bgcolor: "primary.main" }}>A</Avatar> */}
             <Box sx={{ display: "flex", flexDirection: "column" }}>
-              <Typography variant="subtitle2" color="inherit" noWrap>
-                {adminDetails.name}
-              </Typography>
+              {/* <Typography variant="subtitle2" color="inherit" noWrap>
+                Roshan Admin
+              </Typography> */}
             </Box>
           </Box>
         </Toolbar>
       </AppBar>
 
+      {/* Sidebar Drawer */}
       <Drawer
         variant="permanent"
         sx={{
@@ -126,10 +145,12 @@ const Layout = () => {
             display: "flex",
             flexDirection: "column",
             height: "100%",
-            background: "#fff8e6",
+            background: "#000",
+            color: "#fff",
           },
         }}
       >
+        {/* Logo */}
         <Box
           sx={{
             display: "flex",
@@ -143,12 +164,12 @@ const Layout = () => {
           </Box>
         </Box>
 
-        <Divider />
+        <Divider sx={{ borderColor: "rgba(255,255,255,0.2)" }} />
 
+        {/* Menu Items */}
         <List>
           {menuItems.map((item) => {
             const isActive = currentPath === item.path;
-            const isSettings = item.text === "Settings";
 
             if (!item.children) {
               return (
@@ -163,11 +184,11 @@ const Layout = () => {
                       minHeight: 48,
                       justifyContent: "initial",
                       px: 2.5,
-                      backgroundColor: isActive
-                        ? "rgba(25, 118, 210, 0.08)"
-                        : "transparent",
+                      backgroundColor: isActive ? "#1976d2" : "transparent",
                       "&:hover": {
-                        backgroundColor: "rgba(0, 0, 0, 0.04)",
+                        backgroundColor: isActive
+                          ? "#1565c0"
+                          : "rgba(25, 118, 210, 0.2)",
                       },
                     }}
                   >
@@ -176,7 +197,7 @@ const Layout = () => {
                         minWidth: 0,
                         mr: 3,
                         justifyContent: "center",
-                        color: isActive ? "primary.main" : "inherit",
+                        color: "#fff",
                       }}
                     >
                       {item.icon}
@@ -184,9 +205,9 @@ const Layout = () => {
                     <ListItemText
                       primary={item.text}
                       sx={{
-                        color: isActive ? "primary.main" : "inherit",
+                        color: "#fff",
                         "& .MuiTypography-root": {
-                          fontWeight: isActive ? "bold" : "regular",
+                          fontWeight: isActive ? "bold" : "normal",
                         },
                       }}
                     />
@@ -195,36 +216,34 @@ const Layout = () => {
               );
             }
 
-            // Settings with children (dropdown)
+            // Menu with children
             return (
               <React.Fragment key={item.text}>
                 <ListItem disablePadding sx={{ display: "block" }}>
                   <ListItemButton
-                    onClick={() => setSettingsOpen((prev) => !prev)}
+                    onClick={() => toggleMenu(item.text)}
                     sx={{
                       minHeight: 48,
                       justifyContent: "initial",
                       px: 2.5,
                       "&:hover": {
-                        backgroundColor: "rgba(0, 0, 0, 0.04)",
+                        backgroundColor: "rgba(25, 118, 210, 0.2)",
                       },
                     }}
                   >
-                    <ListItemIcon
-                      sx={{
-                        minWidth: 0,
-                        mr: 3,
-                        justifyContent: "center",
-                      }}
-                    >
+                    <ListItemIcon sx={{ minWidth: 0, mr: 3, color: "#fff" }}>
                       {item.icon}
                     </ListItemIcon>
                     <ListItemText primary={item.text} />
-                    {settingsOpen ? <ExpandLess /> : <ExpandMore />}
+                    {openMenus[item.text] ? <ExpandLess /> : <ExpandMore />}
                   </ListItemButton>
                 </ListItem>
 
-                <Collapse in={settingsOpen} timeout="auto" unmountOnExit>
+                <Collapse
+                  in={openMenus[item.text]}
+                  timeout="auto"
+                  unmountOnExit
+                >
                   <List component="div" disablePadding>
                     {item.children.map((child) => {
                       const isChildActive = currentPath === child.path;
@@ -240,19 +259,26 @@ const Layout = () => {
                               minHeight: 40,
                               px: 2.5,
                               backgroundColor: isChildActive
-                                ? "rgba(25, 118, 210, 0.1)"
+                                ? "#1976d2"
                                 : "transparent",
                               "&:hover": {
-                                backgroundColor: "rgba(0, 0, 0, 0.04)",
+                                backgroundColor: isChildActive
+                                  ? "#1565c0"
+                                  : "rgba(25, 118, 210, 0.2)",
                               },
                             }}
                           >
+                            {child.icon && (
+                              <ListItemIcon
+                                sx={{ color: "#fff", minWidth: 30 }}
+                              >
+                                {child.icon}
+                              </ListItemIcon>
+                            )}
                             <ListItemText
                               primary={child.text}
                               sx={{
-                                color: isChildActive
-                                  ? "primary.main"
-                                  : "inherit",
+                                color: "#fff",
                                 "& .MuiTypography-root": {
                                   fontSize: "0.9rem",
                                   fontWeight: isChildActive ? "bold" : "normal",
@@ -272,19 +298,22 @@ const Layout = () => {
 
         <Box sx={{ flexGrow: 1 }} />
 
-        <Divider />
+        <Divider sx={{ borderColor: "rgba(255,255,255,0.2)" }} />
 
+        {/* Bottom Profile + Logout */}
         <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 2 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <Avatar sx={{ bgcolor: "primary.main" }}>
-              {adminDetails.avatar}
-            </Avatar>
+            <Avatar sx={{ bgcolor: "primary.main" }}>A</Avatar>
             <Box>
               <Typography variant="subtitle2" noWrap>
-                {adminDetails.name}
+                Roshan Admin
               </Typography>
-              <Typography variant="body2" color="text.secondary" noWrap>
-                {adminDetails.email}
+              <Typography
+                variant="body2"
+                sx={{ color: "rgba(255,255,255,0.7)" }}
+                noWrap
+              >
+                roshan@admingmail.com
               </Typography>
             </Box>
           </Box>
@@ -294,14 +323,15 @@ const Layout = () => {
             sx={{ borderRadius: 1, justifyContent: "flex-start" }}
           >
             <ListItemIcon sx={{ minWidth: 40 }}>
-              <LogoutIcon color="error" />
+              <LogoutIcon sx={{ color: "red" }} />
             </ListItemIcon>
-            <ListItemText primary="Logout" sx={{ color: "error.main" }} />
+            <ListItemText primary="Logout" sx={{ color: "red" }} />
           </ListItemButton>
         </Box>
       </Drawer>
 
-      <Box component="main" sx={{ width: "100%", mt: "64px" }}>
+      {/* Main Content */}
+      <Box component="main" sx={{ width: "100%", mt: "64px", padding: 3 }}>
         <Outlet />
       </Box>
     </Box>
