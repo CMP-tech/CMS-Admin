@@ -7,6 +7,10 @@ import Post from "./pages/Posts/Post";
 import AddPostPage from "./pages/Posts/AddPost";
 import CategoriesPage from "./pages/Category/category";
 import AddCategoryPage from "./pages/Category/AddCategory";
+import LanguagesPage from "./pages/Languages/Languages";
+import AddLanguagePage from "./pages/Languages/AddLanguage";
+import ProfilePage from "./pages/Profile/Profile";
+import ChangePasswordPage from "./pages/Profile/ChangePassowrd";
 
 function App() {
   return (
@@ -21,6 +25,13 @@ function App() {
             <Route path="admin/posts/add" element={<AddPostPage />} />
             <Route path="admin/categories" element={<CategoriesPage />} />
             <Route path="admin/category/add" element={<AddCategoryPage />} />
+            <Route path="admin/languages" element={<LanguagesPage />} />
+            <Route path="admin/language/add" element={<AddLanguagePage />} />
+            <Route path="admin/profile" element={<ProfilePage />} />
+            <Route
+              path="admin/change-password"
+              element={<ChangePasswordPage />}
+            />
             {/* Add more routes as needed */}
           </Route>
 
