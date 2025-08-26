@@ -1,39 +1,37 @@
-import { createTheme } from "@mui/material";
+// theme.js
+import { createTheme } from "@mui/material/styles";
 
-export const theme = createTheme({
+const theme = createTheme({
   palette: {
+    mode: "light", // or "dark"
     primary: {
-      main: "#000", // Blue (MUI default blue)
-      contrastText: "#ffffff", // White text on blue
+      main: "#1976d2", // Blue
+      contrastText: "#ffffff", // Text on primary buttons
     },
     secondary: {
-      main: "#000000", // Black
-      contrastText: "#ffffff", // White text on black
+      main: "#9c27b0", // Purple
+      contrastText: "#ffffff",
     },
     background: {
-      default: "#f0f2f5", // Light gray background
-      paper: "#ffffff", // White cards
+      default: "#f5f5f5", // Page background
+      paper: "#ffffff", // Cards/dialog background
     },
     text: {
-      primary: "#000000", // Black text
-      secondary: "#1976d2", // Blue text
+      primary: "#212121", // Visible black text
+      secondary: "#616161",
     },
   },
   components: {
-    MuiListItemButton: {
+    MuiButton: {
       styleOverrides: {
         root: {
-          borderRadius: 4,
-          margin: "2px 4px",
-          "&.Mui-selected": {
-            backgroundColor: "#1976d2",
-            color: "#fff",
-            "&:hover": {
-              backgroundColor: "#1565c0",
-            },
-          },
+          borderRadius: "12px",
+          fontWeight: 600,
+          textTransform: "none",
         },
       },
     },
   },
 });
+
+export default theme;

@@ -5,14 +5,12 @@ import {
   TextField,
   Typography,
   Button,
-  Card,
   CardContent,
   Paper,
   Stack,
   Container,
   Avatar,
   Grid,
-  Divider,
   Alert,
   Badge,
   IconButton,
@@ -26,10 +24,7 @@ import {
   Person as PersonIcon,
   Email as EmailIcon,
   Phone as PhoneIcon,
-  LocationOn as LocationIcon,
-  Work as WorkIcon,
   CalendarToday as CalendarIcon,
-  Security as SecurityIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 
@@ -47,7 +42,6 @@ const ProfilePage = () => {
     location: "New York, USA",
     position: "System Administrator",
     department: "IT Department",
-    bio: "Experienced system administrator with over 5 years of expertise in managing content management systems, user permissions, and database optimization.",
     joinDate: "January 15, 2020",
     lastLogin: "2 hours ago",
   });
@@ -59,7 +53,6 @@ const ProfilePage = () => {
       ...profileData,
       [field]: event.target.value,
     });
-    // Clear error for this field
     if (errors[field]) {
       setErrors({ ...errors, [field]: "" });
     }
@@ -97,23 +90,15 @@ const ProfilePage = () => {
 
   const handleCancel = () => {
     setIsEditing(false);
-    // Reset any changes
     setErrors({});
   };
 
   const handleAvatarUpload = () => {
-    // Handle avatar upload logic
     console.log("Upload avatar");
   };
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        // bgcolor: "#f8fafc",
-      }}
-      p={3}
-    >
+    <Box sx={{ minHeight: "100vh" }} p={3}>
       <Container maxWidth="lg">
         {/* Back Button */}
         <Box sx={{ mb: 1 }}>
@@ -135,7 +120,7 @@ const ProfilePage = () => {
           </Button>
         </Box>
 
-        {/* Modern Header */}
+        {/* Header */}
         <Box sx={{ mb: 4 }}>
           <Typography
             variant="h4"
@@ -165,11 +150,7 @@ const ProfilePage = () => {
         {success && (
           <Alert
             severity="success"
-            sx={{
-              mb: 3,
-              borderRadius: "16px",
-              fontSize: "1rem",
-            }}
+            sx={{ mb: 3, borderRadius: "16px", fontSize: "1rem" }}
           >
             Profile updated successfully!
           </Alert>
@@ -188,7 +169,7 @@ const ProfilePage = () => {
               }}
             >
               <CardContent sx={{ p: 4, textAlign: "center" }}>
-                {/* Profile Picture */}
+                {/* Avatar */}
                 <Box
                   sx={{ position: "relative", display: "inline-block", mb: 3 }}
                 >
@@ -203,9 +184,7 @@ const ProfilePage = () => {
                           color: "white",
                           width: 32,
                           height: 32,
-                          "&:hover": {
-                            bgcolor: "primary.dark",
-                          },
+                          "&:hover": { bgcolor: "primary.dark" },
                         }}
                       >
                         <CameraIcon sx={{ fontSize: 16 }} />
@@ -242,11 +221,7 @@ const ProfilePage = () => {
                 <Chip
                   label="Administrator"
                   color="primary"
-                  sx={{
-                    borderRadius: "8px",
-                    fontWeight: 600,
-                    mb: 3,
-                  }}
+                  sx={{ borderRadius: "8px", fontWeight: 600, mb: 3 }}
                 />
 
                 {/* Quick Stats */}
@@ -284,41 +259,6 @@ const ProfilePage = () => {
                       Last active {profileData.lastLogin}
                     </Typography>
                   </Box>
-                </Stack>
-              </CardContent>
-            </Paper>
-
-            {/* Quick Actions */}
-            <Paper
-              elevation={0}
-              sx={{
-                borderRadius: "20px",
-                border: "1px solid #e2e8f0",
-                overflow: "hidden",
-                boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                mt: 3,
-              }}
-            >
-              <CardContent sx={{ p: 3 }}>
-                <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
-                  Quick Actions
-                </Typography>
-                <Stack spacing={2}>
-                  <Button
-                    variant="outlined"
-                    startIcon={<SecurityIcon />}
-                    onClick={() => navigate("/admin/change-password")}
-                    fullWidth
-                    sx={{
-                      borderRadius: "12px",
-                      py: 1.5,
-                      justifyContent: "flex-start",
-                      textTransform: "none",
-                      fontWeight: 600,
-                    }}
-                  >
-                    Change Password
-                  </Button>
                 </Stack>
               </CardContent>
             </Paper>
@@ -401,21 +341,97 @@ const ProfilePage = () => {
                   )}
                 </Box>
 
-                <Stack spacing={4}>
-                  {/* Basic Info */}
+                {/* Basic Info */}
+                <Grid container spacing={3}>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="First Name"
+                      value={profileData.firstName}
+                      onChange={handleInputChange("firstName")}
+                      fullWidth
+                      disabled={!isEditing}
+                      error={!!errors.firstName}
+                      helperText={errors.firstName}
+                      InputProps={{
+                        startAdornment: (
+                          <PersonIcon sx={{ mr: 1, color: "text.secondary" }} />
+                        ),
+                      }}
+                      sx={{
+                        "& .MuiOutlinedInput-root": {
+                          borderRadius: "16px",
+                          fontSize: "1rem",
+                          "&:hover fieldset": {
+                            borderColor: isEditing ? "#3b82f6" : "default",
+                          },
+                          "&.Mui-focused fieldset": {
+                            borderColor: "#3b82f6",
+                            borderWidth: "2px",
+                          },
+                        },
+                        "& .MuiInputLabel-root.Mui-focused": {
+                          color: "#3b82f6",
+                        },
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="Last Name"
+                      value={profileData.lastName}
+                      onChange={handleInputChange("lastName")}
+                      fullWidth
+                      disabled={!isEditing}
+                      error={!!errors.lastName}
+                      helperText={errors.lastName}
+                      sx={{
+                        "& .MuiOutlinedInput-root": {
+                          borderRadius: "16px",
+                          fontSize: "1rem",
+                          "&:hover fieldset": {
+                            borderColor: isEditing ? "#3b82f6" : "default",
+                          },
+                          "&.Mui-focused fieldset": {
+                            borderColor: "#3b82f6",
+                            borderWidth: "2px",
+                          },
+                        },
+                        "& .MuiInputLabel-root.Mui-focused": {
+                          color: "#3b82f6",
+                        },
+                      }}
+                    />
+                  </Grid>
+                </Grid>
+
+                {/* Contact Info */}
+                <Box mt={4}>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 600,
+                      color: "#374151",
+                      mb: 3,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                    }}
+                  >
+                    📧 Contact Information
+                  </Typography>
                   <Grid container spacing={3}>
                     <Grid item xs={12} sm={6}>
                       <TextField
-                        label="First Name"
-                        value={profileData.firstName}
-                        onChange={handleInputChange("firstName")}
+                        label="Email Address"
+                        value={profileData.email}
+                        onChange={handleInputChange("email")}
                         fullWidth
                         disabled={!isEditing}
-                        error={!!errors.firstName}
-                        helperText={errors.firstName}
+                        error={!!errors.email}
+                        helperText={errors.email}
                         InputProps={{
                           startAdornment: (
-                            <PersonIcon
+                            <EmailIcon
                               sx={{ mr: 1, color: "text.secondary" }}
                             />
                           ),
@@ -440,13 +456,18 @@ const ProfilePage = () => {
                     </Grid>
                     <Grid item xs={12} sm={6}>
                       <TextField
-                        label="Last Name"
-                        value={profileData.lastName}
-                        onChange={handleInputChange("lastName")}
+                        label="Phone Number"
+                        value={profileData.phone}
+                        onChange={handleInputChange("phone")}
                         fullWidth
                         disabled={!isEditing}
-                        error={!!errors.lastName}
-                        helperText={errors.lastName}
+                        InputProps={{
+                          startAdornment: (
+                            <PhoneIcon
+                              sx={{ mr: 1, color: "text.secondary" }}
+                            />
+                          ),
+                        }}
                         sx={{
                           "& .MuiOutlinedInput-root": {
                             borderRadius: "16px",
@@ -466,243 +487,7 @@ const ProfilePage = () => {
                       />
                     </Grid>
                   </Grid>
-
-                  {/* Contact Info */}
-                  <Box>
-                    <Typography
-                      variant="h6"
-                      sx={{
-                        fontWeight: 600,
-                        color: "#374151",
-                        mb: 3,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1,
-                      }}
-                    >
-                      📧 Contact Information
-                    </Typography>
-                    <Grid container spacing={3}>
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          label="Email Address"
-                          value={profileData.email}
-                          onChange={handleInputChange("email")}
-                          fullWidth
-                          disabled={!isEditing}
-                          error={!!errors.email}
-                          helperText={errors.email}
-                          InputProps={{
-                            startAdornment: (
-                              <EmailIcon
-                                sx={{ mr: 1, color: "text.secondary" }}
-                              />
-                            ),
-                          }}
-                          sx={{
-                            "& .MuiOutlinedInput-root": {
-                              borderRadius: "16px",
-                              fontSize: "1rem",
-                              "&:hover fieldset": {
-                                borderColor: isEditing ? "#3b82f6" : "default",
-                              },
-                              "&.Mui-focused fieldset": {
-                                borderColor: "#3b82f6",
-                                borderWidth: "2px",
-                              },
-                            },
-                            "& .MuiInputLabel-root.Mui-focused": {
-                              color: "#3b82f6",
-                            },
-                          }}
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          label="Phone Number"
-                          value={profileData.phone}
-                          onChange={handleInputChange("phone")}
-                          fullWidth
-                          disabled={!isEditing}
-                          InputProps={{
-                            startAdornment: (
-                              <PhoneIcon
-                                sx={{ mr: 1, color: "text.secondary" }}
-                              />
-                            ),
-                          }}
-                          sx={{
-                            "& .MuiOutlinedInput-root": {
-                              borderRadius: "16px",
-                              fontSize: "1rem",
-                              "&:hover fieldset": {
-                                borderColor: isEditing ? "#3b82f6" : "default",
-                              },
-                              "&.Mui-focused fieldset": {
-                                borderColor: "#3b82f6",
-                                borderWidth: "2px",
-                              },
-                            },
-                            "& .MuiInputLabel-root.Mui-focused": {
-                              color: "#3b82f6",
-                            },
-                          }}
-                        />
-                      </Grid>
-                    </Grid>
-                  </Box>
-
-                  {/* Work Info */}
-                  <Box>
-                    <Typography
-                      variant="h6"
-                      sx={{
-                        fontWeight: 600,
-                        color: "#374151",
-                        mb: 3,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1,
-                      }}
-                    >
-                      💼 Work Information
-                    </Typography>
-                    <Grid container spacing={3}>
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          label="Position"
-                          value={profileData.position}
-                          onChange={handleInputChange("position")}
-                          fullWidth
-                          disabled={!isEditing}
-                          InputProps={{
-                            startAdornment: (
-                              <WorkIcon
-                                sx={{ mr: 1, color: "text.secondary" }}
-                              />
-                            ),
-                          }}
-                          sx={{
-                            "& .MuiOutlinedInput-root": {
-                              borderRadius: "16px",
-                              fontSize: "1rem",
-                              "&:hover fieldset": {
-                                borderColor: isEditing ? "#3b82f6" : "default",
-                              },
-                              "&.Mui-focused fieldset": {
-                                borderColor: "#3b82f6",
-                                borderWidth: "2px",
-                              },
-                            },
-                            "& .MuiInputLabel-root.Mui-focused": {
-                              color: "#3b82f6",
-                            },
-                          }}
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          label="Department"
-                          value={profileData.department}
-                          onChange={handleInputChange("department")}
-                          fullWidth
-                          disabled={!isEditing}
-                          sx={{
-                            "& .MuiOutlinedInput-root": {
-                              borderRadius: "16px",
-                              fontSize: "1rem",
-                              "&:hover fieldset": {
-                                borderColor: isEditing ? "#3b82f6" : "default",
-                              },
-                              "&.Mui-focused fieldset": {
-                                borderColor: "#3b82f6",
-                                borderWidth: "2px",
-                              },
-                            },
-                            "& .MuiInputLabel-root.Mui-focused": {
-                              color: "#3b82f6",
-                            },
-                          }}
-                        />
-                      </Grid>
-                      <Grid item xs={12}>
-                        <TextField
-                          label="Location"
-                          value={profileData.location}
-                          onChange={handleInputChange("location")}
-                          fullWidth
-                          disabled={!isEditing}
-                          InputProps={{
-                            startAdornment: (
-                              <LocationIcon
-                                sx={{ mr: 1, color: "text.secondary" }}
-                              />
-                            ),
-                          }}
-                          sx={{
-                            "& .MuiOutlinedInput-root": {
-                              borderRadius: "16px",
-                              fontSize: "1rem",
-                              "&:hover fieldset": {
-                                borderColor: isEditing ? "#3b82f6" : "default",
-                              },
-                              "&.Mui-focused fieldset": {
-                                borderColor: "#3b82f6",
-                                borderWidth: "2px",
-                              },
-                            },
-                            "& .MuiInputLabel-root.Mui-focused": {
-                              color: "#3b82f6",
-                            },
-                          }}
-                        />
-                      </Grid>
-                    </Grid>
-                  </Box>
-
-                  {/* Bio */}
-                  <Box>
-                    <Typography
-                      variant="h6"
-                      sx={{
-                        fontWeight: 600,
-                        color: "#374151",
-                        mb: 3,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1,
-                      }}
-                    >
-                      📝 Bio
-                    </Typography>
-                    <TextField
-                      label="About Me"
-                      value={profileData.bio}
-                      onChange={handleInputChange("bio")}
-                      fullWidth
-                      multiline
-                      rows={4}
-                      disabled={!isEditing}
-                      placeholder="Tell us about yourself..."
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          borderRadius: "16px",
-                          fontSize: "1rem",
-                          "&:hover fieldset": {
-                            borderColor: isEditing ? "#3b82f6" : "default",
-                          },
-                          "&.Mui-focused fieldset": {
-                            borderColor: "#3b82f6",
-                            borderWidth: "2px",
-                          },
-                        },
-                        "& .MuiInputLabel-root.Mui-focused": {
-                          color: "#3b82f6",
-                        },
-                      }}
-                    />
-                  </Box>
-                </Stack>
+                </Box>
               </CardContent>
             </Paper>
           </Grid>

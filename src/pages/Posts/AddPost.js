@@ -33,12 +33,14 @@ import { useNavigate } from "react-router-dom";
 
 const categories = ["Technology", "Health", "Education", "Business"];
 const languages = ["English", "Hindi", "Spanish", "French"];
+const accessLevels = ["Free", "Registered Users Only", "Paid Members Only"];
 
 const AddPostPage = () => {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [category, setCategory] = useState("");
   const [language, setLanguage] = useState("");
+  const [accessLevel, setAccessLevel] = useState("");
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState("");
   const tagInputRef = useRef(null);
@@ -63,7 +65,14 @@ const AddPostPage = () => {
   };
 
   const handleSave = () => {
-    console.log("Saving draft...", { title, body, category, language, tags });
+    console.log("Saving draft...", {
+      title,
+      body,
+      category,
+      language,
+      accessLevel,
+      tags,
+    });
   };
 
   const handlePublish = () => {
@@ -72,6 +81,7 @@ const AddPostPage = () => {
       body,
       category,
       language,
+      accessLevel,
       tags,
     });
   };
@@ -319,7 +329,7 @@ const AddPostPage = () => {
                   </FormControl>
 
                   {/* Category */}
-                  <FormControl fullWidth>
+                  <FormControl fullWidth sx={{ mb: 3 }}>
                     <InputLabel sx={{ "&.Mui-focused": { color: "#3b82f6" } }}>
                       Category
                     </InputLabel>
@@ -343,6 +353,36 @@ const AddPostPage = () => {
                       {categories.map((cat) => (
                         <MenuItem key={cat} value={cat}>
                           {cat}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  {/* Access Level */}
+                  <FormControl fullWidth>
+                    <InputLabel sx={{ "&.Mui-focused": { color: "#3b82f6" } }}>
+                      Access Level
+                    </InputLabel>
+                    <Select
+                      value={accessLevel}
+                      onChange={(e) => setAccessLevel(e.target.value)}
+                      label="Access Level"
+                      sx={{
+                        borderRadius: "12px",
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderColor: "#e2e8f0",
+                        },
+                        "&:hover .MuiOutlinedInput-notchedOutline": {
+                          borderColor: "#3b82f6",
+                        },
+                        "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                          borderColor: "#3b82f6",
+                        },
+                      }}
+                    >
+                      {accessLevels.map((level) => (
+                        <MenuItem key={level} value={level}>
+                          {level}
                         </MenuItem>
                       ))}
                     </Select>

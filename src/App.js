@@ -11,6 +11,8 @@ import LanguagesPage from "./pages/Languages/Languages";
 import AddLanguagePage from "./pages/Languages/AddLanguage";
 import ProfilePage from "./pages/Profile/Profile";
 import ChangePasswordPage from "./pages/Profile/ChangePassowrd";
+import LoginPage from "./pages/auth/login";
+import ForgotPassword from "./pages/auth/forgetPassword";
 
 function App() {
   return (
@@ -19,6 +21,8 @@ function App() {
       <Router>
         <Routes>
           {/* Public Routes */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/" element={<Layout />}>
             {/* <Route path="home" element={<Home />} /> */}
             <Route path="admin/posts" element={<Post />} />

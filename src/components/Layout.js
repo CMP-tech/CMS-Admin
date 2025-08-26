@@ -65,7 +65,6 @@ const Layout = () => {
     }));
   };
 
-  // Profile menu handlers
   const handleProfileMenuOpen = (event) => {
     setProfileMenuAnchor(event.currentTarget);
   };
@@ -86,7 +85,6 @@ const Layout = () => {
 
   const menuItems = [
     { text: "Dashboard", icon: <DashboardIcon />, path: "/admin/dashboard" },
-
     {
       text: "All Posts",
       icon: <ArticleIcon />,
@@ -104,7 +102,6 @@ const Layout = () => {
         },
       ],
     },
-
     {
       text: "Settings",
       icon: <SettingsIcon />,
@@ -113,7 +110,6 @@ const Layout = () => {
         { text: "Copyright", path: "/settings/copyright" },
       ],
     },
-
     {
       text: "Contact Requests",
       icon: <ContactMailIcon />,
@@ -121,7 +117,7 @@ const Layout = () => {
     },
   ];
 
-  // Auto-expand a parent menu if a child path is active
+  // auto-expand menu if child is active
   useEffect(() => {
     menuItems.forEach((item) => {
       if (item.children) {
@@ -142,73 +138,58 @@ const Layout = () => {
         position="fixed"
         sx={{
           zIndex: theme.zIndex.drawer + 1,
-          marginLeft: drawerWidth,
+          ml: drawerWidth,
           width: `calc(100% - ${drawerWidth}px)`,
-          backgroundColor: "#0d2033ff",
+          bgcolor: "#fff",
+          color: "#000",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
         }}
       >
         <Toolbar sx={{ justifyContent: "space-between" }}>
-          {/* Left side - can add breadcrumbs or page title here */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            {/* You can add breadcrumbs or current page title here */}
-          </Box>
+          <Box />
 
-          {/* Right side - Profile Menu */}
+          {/* Right side */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            {/* Online Status Indicator */}
             <Chip
               label="Online"
               size="small"
               sx={{
                 bgcolor: "success.main",
-                color: "white",
+                color: "#fff",
                 fontSize: "0.75rem",
                 height: "24px",
               }}
             />
 
-            {/* Profile Menu Button */}
             <IconButton
               onClick={handleProfileMenuOpen}
               sx={{
                 display: "flex",
                 alignItems: "center",
                 gap: 1,
-                color: "white",
-                "&:hover": {
-                  bgcolor: "rgba(255, 255, 255, 0.1)",
-                },
+                color: "#000",
                 borderRadius: 2,
                 px: 2,
+                "&:hover": { bgcolor: "#1976d2" },
               }}
             >
-              <Avatar
-                sx={{
-                  bgcolor: "primary.main",
-                  width: 32,
-                  height: 32,
-                  fontSize: "0.9rem",
-                }}
-              >
+              <Avatar sx={{ bgcolor: "#1976d2", width: 32, height: 32 }}>
                 R
               </Avatar>
               <Box
                 sx={{ textAlign: "left", display: { xs: "none", sm: "block" } }}
               >
-                <Typography variant="body2" sx={{ lineHeight: 1.2 }}>
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>
                   Roshan Admin
                 </Typography>
-                <Typography
-                  variant="caption"
-                  sx={{ color: "rgba(255,255,255,0.7)", lineHeight: 1 }}
-                >
+                <Typography variant="caption" color="text.secondary">
                   Administrator
                 </Typography>
               </Box>
               <KeyboardArrowDownIcon sx={{ fontSize: 20 }} />
             </IconButton>
 
-            {/* Profile Dropdown Menu */}
+            {/* Profile Dropdown */}
             <Menu
               anchorEl={profileMenuAnchor}
               open={Boolean(profileMenuAnchor)}
@@ -224,12 +205,9 @@ const Layout = () => {
                 },
               }}
             >
-              {/* Profile Header in Menu */}
               <Box sx={{ p: 2, borderBottom: "1px solid #f0f0f0" }}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                  <Avatar
-                    sx={{ bgcolor: "primary.main", width: 40, height: 40 }}
-                  >
+                  <Avatar sx={{ bgcolor: "#1976d2", width: 40, height: 40 }}>
                     R
                   </Avatar>
                   <Box>
@@ -243,16 +221,7 @@ const Layout = () => {
                 </Box>
               </Box>
 
-              {/* Menu Items */}
-              <MenuItem
-                onClick={handleProfileClick}
-                sx={{
-                  py: 1.5,
-                  "&:hover": {
-                    bgcolor: "primary.50",
-                  },
-                }}
-              >
+              <MenuItem onClick={handleProfileClick}>
                 <ListItemIcon>
                   <AccountCircleIcon color="primary" />
                 </ListItemIcon>
@@ -262,15 +231,7 @@ const Layout = () => {
                 />
               </MenuItem>
 
-              <MenuItem
-                onClick={handleChangePasswordClick}
-                sx={{
-                  py: 1.5,
-                  "&:hover": {
-                    bgcolor: "warning.50",
-                  },
-                }}
-              >
+              <MenuItem onClick={handleChangePasswordClick}>
                 <ListItemIcon>
                   <LockResetIcon color="warning" />
                 </ListItemIcon>
@@ -282,15 +243,7 @@ const Layout = () => {
 
               <Divider sx={{ my: 1 }} />
 
-              <MenuItem
-                onClick={handleLogout}
-                sx={{
-                  py: 1.5,
-                  "&:hover": {
-                    bgcolor: "error.50",
-                  },
-                }}
-              >
+              <MenuItem onClick={handleLogout}>
                 <ListItemIcon>
                   <LogoutIcon color="error" />
                 </ListItemIcon>
@@ -304,7 +257,7 @@ const Layout = () => {
         </Toolbar>
       </AppBar>
 
-      {/* Sidebar Drawer - Simplified without profile section */}
+      {/* Sidebar Drawer */}
       <Drawer
         variant="permanent"
         sx={{
@@ -313,12 +266,9 @@ const Layout = () => {
           "& .MuiDrawer-paper": {
             width: drawerWidth,
             boxSizing: "border-box",
-            whiteSpace: "nowrap",
-            display: "flex",
-            flexDirection: "column",
-            height: "100%",
-            background: "#000",
-            color: "#fff",
+            bgcolor: "#fff",
+            color: "#000",
+            borderRight: "1px solid #e0e0e0",
           },
         }}
       >
@@ -334,7 +284,7 @@ const Layout = () => {
           <Box component="img" sx={{ height: 40 }} alt="Logo" src={logo} />
         </Box>
 
-        <Divider sx={{ borderColor: "rgba(255,255,255,0.2)" }} />
+        <Divider />
 
         {/* Menu Items */}
         <List sx={{ flexGrow: 1, pt: 2 }}>
@@ -343,33 +293,27 @@ const Layout = () => {
 
             if (!item.children) {
               return (
-                <ListItem
-                  key={item.text}
-                  disablePadding
-                  sx={{ display: "block", mb: 0.5 }}
-                >
+                <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
                   <ListItemButton
                     onClick={() => handleMenuItemClick(item.path)}
+                    selected={isActive}
                     sx={{
-                      minHeight: 48,
-                      justifyContent: "initial",
-                      px: 2.5,
-                      mx: 1,
                       borderRadius: 2,
-                      backgroundColor: isActive ? "#1976d2" : "transparent",
-                      "&:hover": {
-                        backgroundColor: isActive
-                          ? "#1565c0"
-                          : "rgba(25, 118, 210, 0.2)",
+                      mx: 1,
+                      "&.Mui-selected": {
+                        bgcolor: "#1976d2",
+                        color: "#fff",
+                        "& .MuiSvgIcon-root": { color: "#fff" },
+                        "&:hover": { bgcolor: "#1565c0" },
                       },
+                      "&:hover": { bgcolor: "#1976d2" },
                     }}
                   >
                     <ListItemIcon
                       sx={{
+                        color: isActive ? "#fff" : "#757575",
                         minWidth: 0,
-                        mr: 3,
-                        justifyContent: "center",
-                        color: "#fff",
+                        mr: 2,
                       }}
                     >
                       {item.icon}
@@ -377,9 +321,8 @@ const Layout = () => {
                     <ListItemText
                       primary={item.text}
                       sx={{
-                        color: "#fff",
                         "& .MuiTypography-root": {
-                          fontWeight: isActive ? "bold" : "normal",
+                          fontWeight: isActive ? 600 : 400,
                         },
                       }}
                     />
@@ -388,24 +331,19 @@ const Layout = () => {
               );
             }
 
-            // Menu with children
+            // Parent with children
             return (
               <React.Fragment key={item.text}>
-                <ListItem disablePadding sx={{ display: "block", mb: 0.5 }}>
+                <ListItem disablePadding sx={{ mb: 0.5 }}>
                   <ListItemButton
                     onClick={() => toggleMenu(item.text)}
                     sx={{
-                      minHeight: 48,
-                      justifyContent: "initial",
-                      px: 2.5,
-                      mx: 1,
                       borderRadius: 2,
-                      "&:hover": {
-                        backgroundColor: "rgba(25, 118, 210, 0.2)",
-                      },
+                      mx: 1,
+                      "&:hover": { bgcolor: "#1976d2" },
                     }}
                   >
-                    <ListItemIcon sx={{ minWidth: 0, mr: 3, color: "#fff" }}>
+                    <ListItemIcon sx={{ color: "#757575", minWidth: 0, mr: 2 }}>
                       {item.icon}
                     </ListItemIcon>
                     <ListItemText primary={item.text} />
@@ -429,24 +367,25 @@ const Layout = () => {
                         >
                           <ListItemButton
                             onClick={() => handleMenuItemClick(child.path)}
+                            selected={isChildActive}
                             sx={{
-                              minHeight: 40,
-                              px: 2.5,
-                              mx: 1,
                               borderRadius: 2,
-                              backgroundColor: isChildActive
-                                ? "#1976d2"
-                                : "transparent",
-                              "&:hover": {
-                                backgroundColor: isChildActive
-                                  ? "#1565c0"
-                                  : "rgba(25, 118, 210, 0.2)",
+                              mx: 1,
+                              "&.Mui-selected": {
+                                bgcolor: "#1976d2",
+                                color: "#fff",
+                                "& .MuiSvgIcon-root": { color: "#fff" },
+                                "&:hover": { bgcolor: "#1565c0" },
                               },
+                              "&:hover": { bgcolor: "#1976d2" },
                             }}
                           >
                             {child.icon && (
                               <ListItemIcon
-                                sx={{ color: "#fff", minWidth: 30 }}
+                                sx={{
+                                  color: isChildActive ? "#fff" : "#757575",
+                                  minWidth: 30,
+                                }}
                               >
                                 {child.icon}
                               </ListItemIcon>
@@ -454,10 +393,9 @@ const Layout = () => {
                             <ListItemText
                               primary={child.text}
                               sx={{
-                                color: "#fff",
                                 "& .MuiTypography-root": {
                                   fontSize: "0.9rem",
-                                  fontWeight: isChildActive ? "bold" : "normal",
+                                  fontWeight: isChildActive ? 600 : 400,
                                 },
                               }}
                             />
@@ -474,7 +412,16 @@ const Layout = () => {
       </Drawer>
 
       {/* Main Content */}
-      <Box component="main" sx={{ width: "100%", mt: "64px", padding: 3 }}>
+      <Box
+        component="main"
+        sx={{
+          width: "100%",
+          mt: "64px",
+          p: 3,
+          bgcolor: "#f5f6fa",
+          minHeight: "100vh",
+        }}
+      >
         <Outlet />
       </Box>
     </Box>
