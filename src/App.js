@@ -13,6 +13,9 @@ import ProfilePage from "./pages/Profile/Profile";
 import ChangePasswordPage from "./pages/Profile/ChangePassowrd";
 import LoginPage from "./pages/auth/login";
 import ForgotPassword from "./pages/auth/forgetPassword";
+import GeneralSettings from "./pages/settings/General";
+import ReadingSettings from "./pages/settings/Reading";
+import GoogleAnalyticsSettings from "./pages/settings/GoogleAnalytics";
 
 function App() {
   return (
@@ -32,6 +35,13 @@ function App() {
             <Route path="admin/languages" element={<LanguagesPage />} />
             <Route path="admin/language/add" element={<AddLanguagePage />} />
             <Route path="admin/profile" element={<ProfilePage />} />
+            <Route path="/settings/general" element={<GeneralSettings />} />
+            <Route path="/settings/reading" element={<ReadingSettings />} />
+            <Route
+              path="/settings/google-analytics"
+              element={<GoogleAnalyticsSettings />}
+            />
+
             <Route
               path="admin/change-password"
               element={<ChangePasswordPage />}

@@ -107,6 +107,10 @@ const Layout = () => {
       icon: <SettingsIcon />,
       children: [
         { text: "Social Media", path: "/settings/social-media" },
+        { text: "General", path: "/settings/general" },
+        { text: "Reading", path: "/settings/reading" },
+        { text: "Privacy", path: "/settings/privacy" },
+        { text: "Google Anylayics", path: "/settings/google-analytics" },
         { text: "Copyright", path: "/settings/copyright" },
       ],
     },
