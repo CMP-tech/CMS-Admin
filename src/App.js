@@ -16,6 +16,8 @@ import ForgotPassword from "./pages/auth/forgetPassword";
 import GeneralSettings from "./pages/settings/General";
 import ReadingSettings from "./pages/settings/Reading";
 import GoogleAnalyticsSettings from "./pages/settings/GoogleAnalytics";
+import Dashboard from "./pages/Dashboard/dashboard";
+import PrivacyPage from "./pages/settings/Privacy";
 
 function App() {
   return (
@@ -27,7 +29,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/" element={<Layout />}>
-            {/* <Route path="home" element={<Home />} /> */}
+            <Route path="admin/dashboard" element={<Dashboard />} />
             <Route path="admin/posts" element={<Post />} />
             <Route path="admin/posts/add" element={<AddPostPage />} />
             <Route path="admin/categories" element={<CategoriesPage />} />
@@ -37,6 +39,7 @@ function App() {
             <Route path="admin/profile" element={<ProfilePage />} />
             <Route path="/settings/general" element={<GeneralSettings />} />
             <Route path="/settings/reading" element={<ReadingSettings />} />
+            <Route path="/settings/privacy" element={<PrivacyPage />} />
             <Route
               path="/settings/google-analytics"
               element={<GoogleAnalyticsSettings />}
