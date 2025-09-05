@@ -1,5 +1,5 @@
 // pages/CategoriesPage.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -18,54 +18,45 @@ import {
   Tooltip,
   Pagination,
   Stack,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
 } from "@mui/material";
 import { Add, Edit, Delete, Visibility } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
+import axiosInstance from "../../axiosInstance";
+import { toast } from "react-toastify";
+// import axiosInstance from "../utils/axiosInstance"; // 👈 use your axios instance
 
 const CategoriesPage = () => {
+  const [categories, setCategories] = useState([]);
   const [search, setSearch] = useState("");
-
-  const categories = [
-    {
-      id: 1,
-      name: "Technology",
-      description: "Posts about latest tech trends, gadgets, and innovations",
-      slug: "technology",
-    },
-    {
-      id: 2,
-      name: "Lifestyle",
-      description: "Content related to daily life, health, and wellness",
-      slug: "lifestyle",
-    },
-    {
-      id: 3,
-      name: "Business",
-      description: "Business strategies, entrepreneurship, and market insights",
-      slug: "business",
-    },
-    {
-      id: 4,
-      name: "Travel",
-      description: "Travel guides, tips, and destination reviews",
-      slug: "travel",
-    },
-    {
-      id: 5,
-      name: "Food & Cooking",
-      description: "Recipes, cooking techniques, and food culture",
-      slug: "food-cooking",
-    },
-  ];
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
 
   const navigate = useNavigate();
 
-  const filteredCategories = categories.filter(
-    (category) =>
-      category.name.toLowerCase().includes(search.toLowerCase()) ||
-      category.description.toLowerCase().includes(search.toLowerCase()) ||
-      category.slug.toLowerCase().includes(search.toLowerCase())
-  );
+  // Fetch categories
+  const fetchCategories = async () => {
+    try {
+      const res = await axiosInstance.get("/categories", {
+        params: { page, limit: 5, search },
+      });
+      setCategories(res.data.categories);
+      setTotalPages(res.data.pages);
+    } catch (err) {
+      console.error("Error fetching categories:", err.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, [page, search]);
 
   const handleView = (id) => {
     navigate(`/admin/categories/view/${id}`);
@@ -75,8 +66,22 @@ const CategoriesPage = () => {
     navigate(`/admin/categories/edit/${id}`);
   };
 
-  const handleDelete = (id) => {
-    console.log("Delete category with id:", id);
+  const handleDeleteClick = (id) => {
+    setDeleteId(id);
+    setOpenDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await axiosInstance.delete(`/categories/${deleteId}`);
+      toast.success("Category deleted successfully");
+      setCategories((prev) => prev.filter((cat) => cat._id !== deleteId));
+    } catch (err) {
+      console.error("Delete failed:", err.message);
+    } finally {
+      setOpenDialog(false);
+      setDeleteId(null);
+    }
   };
 
   return (
@@ -134,15 +139,10 @@ const CategoriesPage = () => {
         </Button>
       </Box>
 
-      {/* Search Filter */}
+      {/* Search */}
       <Paper
         elevation={0}
-        sx={{
-          borderRadius: "20px",
-          border: "1px solid #e2e8f0",
-          boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-          mb: 3,
-        }}
+        sx={{ borderRadius: "20px", border: "1px solid #e2e8f0", mb: 3 }}
       >
         <CardContent sx={{ p: 3 }}>
           <Grid container spacing={2}>
@@ -153,20 +153,6 @@ const CategoriesPage = () => {
                 placeholder="Search by name, description, or slug..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: "12px",
-                    "&:hover fieldset": {
-                      borderColor: "#3b82f6",
-                    },
-                    "&.Mui-focused fieldset": {
-                      borderColor: "#3b82f6",
-                    },
-                  },
-                  "& .MuiInputLabel-root.Mui-focused": {
-                    color: "#3b82f6",
-                  },
-                }}
               />
             </Grid>
           </Grid>
@@ -176,12 +162,7 @@ const CategoriesPage = () => {
       {/* Table */}
       <Paper
         elevation={0}
-        sx={{
-          borderRadius: "20px",
-          border: "1px solid #e2e8f0",
-          boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-          overflow: "hidden",
-        }}
+        sx={{ borderRadius: "20px", border: "1px solid #e2e8f0" }}
       >
         <TableContainer>
           <Table>
@@ -191,59 +172,34 @@ const CategoriesPage = () => {
               }}
             >
               <TableRow>
-                <TableCell sx={{ color: "white", fontWeight: 600, py: 2 }}>
+                <TableCell sx={{ color: "white", fontWeight: 600 }}>
                   ID
                 </TableCell>
-                <TableCell sx={{ color: "white", fontWeight: 600, py: 2 }}>
+                <TableCell sx={{ color: "white", fontWeight: 600 }}>
                   Category Name
                 </TableCell>
-                <TableCell sx={{ color: "white", fontWeight: 600, py: 2 }}>
+                <TableCell sx={{ color: "white", fontWeight: 600 }}>
                   Description
                 </TableCell>
-                <TableCell sx={{ color: "white", fontWeight: 600, py: 2 }}>
+                <TableCell sx={{ color: "white", fontWeight: 600 }}>
                   Slug
                 </TableCell>
+                <TableCell sx={{ color: "white", fontWeight: 600 }}>
+                  Status
+                </TableCell>
                 <TableCell
-                  sx={{
-                    color: "white",
-                    fontWeight: 600,
-                    py: 2,
-                    textAlign: "center",
-                  }}
+                  sx={{ color: "white", fontWeight: 600, textAlign: "center" }}
                 >
                   Actions
                 </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredCategories.map((category, index) => (
-                <TableRow
-                  key={category.id}
-                  sx={{
-                    "&:hover": { bgcolor: "#f8fafc" },
-                    "&:nth-of-type(even)": { bgcolor: "#fafbfc" },
-                  }}
-                >
-                  <TableCell sx={{ fontWeight: 500, color: "#374151" }}>
-                    #{category.id.toString().padStart(3, "0")}
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 500, color: "#1a202c" }}>
-                    {category.name}
-                  </TableCell>
-                  <TableCell>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        maxWidth: 300,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                        color: "#4b5563",
-                      }}
-                    >
-                      {category.description}
-                    </Typography>
-                  </TableCell>
+              {categories?.map((category, index) => (
+                <TableRow key={category._id}>
+                  <TableCell>#{index + 1}</TableCell>
+                  <TableCell>{category.categoryName}</TableCell>
+                  <TableCell>{category.description}</TableCell>
                   <TableCell>
                     <Typography
                       variant="body2"
@@ -255,11 +211,21 @@ const CategoriesPage = () => {
                         borderRadius: "6px",
                         display: "inline-block",
                         color: "#1d4ed8",
-                        fontWeight: 500,
                       }}
                     >
                       {category.slug}
                     </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={
+                        category.status === "published" ? "Public" : "Draft"
+                      }
+                      color={
+                        category.status === "published" ? "success" : "warning"
+                      }
+                      size="small"
+                    />
                   </TableCell>
                   <TableCell>
                     <Stack
@@ -267,55 +233,28 @@ const CategoriesPage = () => {
                       spacing={0.5}
                       justifyContent="center"
                     >
-                      <Tooltip title="View Category">
+                      {/* <Tooltip title="View">
                         <IconButton
-                          size="small"
-                          sx={{
-                            color: "#3b82f6",
-                            bgcolor: "#eff6ff",
-                            "&:hover": {
-                              bgcolor: "#dbeafe",
-                              transform: "scale(1.1)",
-                            },
-                            transition: "all 0.2s ease",
-                          }}
-                          onClick={() => handleView(category.id)}
+                          sx={{ color: "#3b82f6" }}
+                          onClick={() => handleView(category._id)}
                         >
-                          <Visibility fontSize="small" />
+                          <Visibility />
+                        </IconButton>
+                      </Tooltip> */}
+                      <Tooltip title="Edit">
+                        <IconButton
+                          sx={{ color: "#f59e0b" }}
+                          onClick={() => handleEdit(category._id)}
+                        >
+                          <Edit />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title="Edit Category">
+                      <Tooltip title="Delete">
                         <IconButton
-                          size="small"
-                          sx={{
-                            color: "#f59e0b",
-                            bgcolor: "#fef3c7",
-                            "&:hover": {
-                              bgcolor: "#fde68a",
-                              transform: "scale(1.1)",
-                            },
-                            transition: "all 0.2s ease",
-                          }}
-                          onClick={() => handleEdit(category.id)}
+                          sx={{ color: "#ef4444" }}
+                          onClick={() => handleDeleteClick(category._id)}
                         >
-                          <Edit fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Delete Category">
-                        <IconButton
-                          size="small"
-                          sx={{
-                            color: "#ef4444",
-                            bgcolor: "#fef2f2",
-                            "&:hover": {
-                              bgcolor: "#fecaca",
-                              transform: "scale(1.1)",
-                            },
-                            transition: "all 0.2s ease",
-                          }}
-                          onClick={() => handleDelete(category.id)}
-                        >
-                          <Delete fontSize="small" />
+                          <Delete />
                         </IconButton>
                       </Tooltip>
                     </Stack>
@@ -326,50 +265,33 @@ const CategoriesPage = () => {
           </Table>
         </TableContainer>
 
-        {/* No Results */}
-        {filteredCategories.length === 0 && (
-          <Box
-            display="flex"
-            justifyContent="center"
-            alignItems="center"
-            py={4}
-          >
-            <Typography variant="body1" color="text.secondary">
-              No categories found matching your search criteria.
-            </Typography>
-          </Box>
-        )}
-
         {/* Pagination */}
-        <Box
-          sx={{
-            p: 3,
-            display: "flex",
-            justifyContent: "center",
-            borderTop: "1px solid #e2e8f0",
-          }}
-        >
+        <Box sx={{ p: 3, display: "flex", justifyContent: "center" }}>
           <Pagination
-            count={2}
-            sx={{
-              "& .MuiPaginationItem-root": {
-                borderRadius: "8px",
-                fontWeight: 500,
-                "&.Mui-selected": {
-                  background:
-                    "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                  color: "white",
-                  "&:hover": {
-                    background:
-                      "linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)",
-                  },
-                },
-                "&:hover": { bgcolor: "#f1f5f9" },
-              },
-            }}
+            count={totalPages}
+            page={page}
+            onChange={(e, value) => setPage(value)}
           />
         </Box>
       </Paper>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this category?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDialog(false)} color="inherit">
+            Cancel
+          </Button>
+          <Button onClick={confirmDelete} color="error" variant="contained">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

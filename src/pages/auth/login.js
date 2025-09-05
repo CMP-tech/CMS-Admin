@@ -1,4 +1,4 @@
-import React, { use, useState } from "react";
+import React, { useState } from "react";
 import {
   Box,
   Button,
@@ -11,12 +11,48 @@ import {
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
+import axiosInstance from "../../axiosInstance";
+// ✅ Import axios instance
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
   const navigate = useNavigate();
+
   const handleTogglePassword = () => {
     setShowPassword(!showPassword);
+  };
+
+  const handleLogin = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const { data } = await axiosInstance.post("/users/login", {
+        email,
+        password,
+        isAdminLogin: true, // change to true if using admin login
+      });
+      console.log("Login response data:", data);
+      // Save token
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("adminDetails", JSON.stringify(data.adminDetails));
+
+      // Navigate by role
+      if (data.role === "admin") {
+        navigate("/admin/dashboard");
+      } else {
+        navigate("/user/dashboard");
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || "Login failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -64,6 +100,8 @@ const Login = () => {
             fullWidth
             label="Email"
             type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             variant="outlined"
             margin="normal"
             sx={{ borderRadius: 2 }}
@@ -74,6 +112,8 @@ const Login = () => {
             fullWidth
             label="Password"
             type={showPassword ? "text" : "password"}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             variant="outlined"
             margin="normal"
             sx={{ borderRadius: 2 }}
@@ -88,12 +128,26 @@ const Login = () => {
             }}
           />
 
+          {/* Error message */}
+          {error && (
+            <Typography
+              color="error"
+              align="center"
+              mt={2}
+              sx={{ fontWeight: "bold" }}
+            >
+              {error}
+            </Typography>
+          )}
+
           {/* Login Button */}
           <Button
             fullWidth
             variant="contained"
             color="primary"
             size="large"
+            onClick={handleLogin}
+            disabled={loading}
             sx={{
               mt: 3,
               borderRadius: 2,
@@ -102,7 +156,7 @@ const Login = () => {
               py: 1.2,
             }}
           >
-            Login
+            {loading ? "Logging in..." : "Login"}
           </Button>
 
           {/* Forgot Password + Register */}
@@ -121,20 +175,21 @@ const Login = () => {
                 cursor: "pointer",
                 "&:hover": { textDecoration: "underline" },
               }}
+              onClick={() => navigate("/forgot-password")}
             >
-              {/* Forgot Password? */}
+              Forgot Password?
             </Typography>
-            <Typography
+            {/* <Typography
               variant="body2"
               color="primary"
-              //   onClick={() => navigate("/forgot-password")}
               sx={{
                 cursor: "pointer",
                 "&:hover": { textDecoration: "underline" },
               }}
+              onClick={() => navigate("/register")}
             >
-              Forgot Password?
-            </Typography>
+              Register
+            </Typography> */}
           </Box>
         </CardContent>
       </Card>

@@ -6,16 +6,36 @@ import {
   CardContent,
   TextField,
   Typography,
+  Alert,
+  CircularProgress,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import axiosInstance from "../../axiosInstance";
+// ✅ your axios instance path
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState(null);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Password reset requested for:", email);
+    setLoading(true);
+    setMessage(null);
+    setError(null);
+
+    try {
+      const { data } = await axiosInstance.post("/users/forgot-password", {
+        email,
+      });
+      setMessage(data.message);
+    } catch (err) {
+      setError(err.response?.data?.message || "Something went wrong!");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -55,8 +75,20 @@ const ForgotPassword = () => {
             color="text.secondary"
             mb={3}
           >
-            Enter your registered email address to receive a reset link.
+            Enter your registered email address to receive a new password.
           </Typography>
+
+          {/* Success/Error Messages */}
+          {message && (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              {message}
+            </Alert>
+          )}
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
 
           {/* Email */}
           <form onSubmit={handleSubmit}>
@@ -79,6 +111,7 @@ const ForgotPassword = () => {
               variant="contained"
               color="primary"
               size="large"
+              disabled={loading}
               sx={{
                 mt: 3,
                 borderRadius: 2,
@@ -87,7 +120,11 @@ const ForgotPassword = () => {
                 py: 1.2,
               }}
             >
-              Send Reset Link
+              {loading ? (
+                <CircularProgress size={24} sx={{ color: "#fff" }} />
+              ) : (
+                "Send Reset Email"
+              )}
             </Button>
           </form>
 

@@ -1,9 +1,7 @@
-// pages/PostsPage.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
-  Card,
   CardContent,
   Grid,
   MenuItem,
@@ -24,16 +22,21 @@ import {
   Pagination,
   Chip,
   Stack,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import {
   Add,
   Edit,
   Delete,
-  Visibility,
-  Search as SearchIcon,
   FilterList as FilterIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
+
+import { toast } from "react-toastify";
+import axiosInstance from "../../axiosInstance";
 
 const PostsPage = () => {
   const [search, setSearch] = useState("");
@@ -41,79 +44,130 @@ const PostsPage = () => {
   const [language, setLanguage] = useState("");
   const [accessLevel, setAccessLevel] = useState("");
   const [date, setDate] = useState("");
+  const [posts, setPosts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [languages, setLanguages] = useState([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const posts = [
-    {
-      id: 1,
-      title: "Getting Started with React Hooks",
-      category: "Technology",
-      language: "English",
-      accessLevel: "Free",
-      date: "2025-08-01",
-      status: "Published",
-    },
-    {
-      id: 2,
-      title: "Modern Web Development Practices",
-      category: "Technology",
-      language: "English",
-      accessLevel: "Registered Users Only",
-      date: "2025-08-10",
-      status: "Published",
-    },
-    {
-      id: 3,
-      title: "Advanced JavaScript Concepts",
-      category: "Technology",
-      language: "English",
-      accessLevel: "Paid Members Only",
-      date: "2025-08-15",
-      status: "Draft",
-    },
-    {
-      id: 4,
-      title: "स्वास्थ्य और फिटनेस टिप्स",
-      category: "Health",
-      language: "Hindi",
-      accessLevel: "Free",
-      date: "2025-08-20",
-      status: "Published",
-    },
+  // Confirmation state
+  const [openConfirm, setOpenConfirm] = useState(false);
+  const [selectedPost, setSelectedPost] = useState(null);
+
+  const accessLevels = [
+    { value: "free", label: "Free" },
+    { value: "registered", label: "Registered Users Only" },
+    { value: "paid", label: "Paid Members Only" },
   ];
-
-  const categories = ["Technology", "Health", "Education", "Business"];
-  const languages = ["English", "Hindi", "Spanish", "French"];
-  const accessLevels = ["Free", "Registered Users Only", "Paid Members Only"];
 
   const navigate = useNavigate();
 
+  // 🎨 Color coding for Access Levels
   const getAccessLevelColor = (level) => {
     switch (level) {
-      case "Free":
+      case "free":
         return { bgcolor: "#dcfce7", color: "#166534", borderColor: "#bbf7d0" };
-      case "Registered Users Only":
+      case "registered":
         return { bgcolor: "#fef3c7", color: "#92400e", borderColor: "#fde68a" };
-      case "Paid Members Only":
+      case "paid":
         return { bgcolor: "#fce7f3", color: "#be185d", borderColor: "#fbcfe8" };
       default:
         return { bgcolor: "#f3f4f6", color: "#374151", borderColor: "#d1d5db" };
     }
   };
 
+  // 🎨 Color coding for Post Status
   const getStatusColor = (status) => {
     switch (status) {
-      case "Published":
+      case "published":
         return { bgcolor: "#dcfce7", color: "#166534" };
-      case "Draft":
+      case "draft":
         return { bgcolor: "#f3f4f6", color: "#6b7280" };
       default:
         return { bgcolor: "#f3f4f6", color: "#374151" };
     }
   };
 
+  // ✅ Fetch posts
+  const fetchPosts = async (pageNum = 1) => {
+    try {
+      const res = await axiosInstance.get("/posts", {
+        params: {
+          search,
+          category,
+          language,
+          accessLevel,
+          date,
+          page: pageNum,
+          limit: 10,
+        },
+      });
+
+      if (res.data.success) {
+        setPosts(res.data.data);
+        setTotalPages(res.data.pagination.totalPages);
+      } else {
+        toast.error("Failed to fetch posts");
+      }
+    } catch (error) {
+      console.error("Error fetching posts:", error);
+      toast.error("Error fetching posts");
+    }
+  };
+
+  // ✅ Fetch categories
+  const fetchCategories = async () => {
+    try {
+      const response = await axiosInstance.get("/categories", {
+        params: { limit: 100 },
+      });
+      setCategories(response.data.categories || response.data);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    }
+  };
+
+  // ✅ Fetch languages
+  const fetchLanguages = async () => {
+    try {
+      const response = await axiosInstance.get("/languages", {
+        params: { limit: 100 },
+      });
+      setLanguages(response.data.data || response.data);
+    } catch (error) {
+      console.error("Error fetching languages:", error);
+    }
+  };
+
+  // ✅ Delete Post
+  const handleDelete = async () => {
+    if (!selectedPost) return;
+    try {
+      await axiosInstance.delete(`/posts/${selectedPost._id}`);
+      toast.success("Post deleted successfully");
+      fetchPosts(page);
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      toast.error("Error deleting post");
+    } finally {
+      setOpenConfirm(false);
+      setSelectedPost(null);
+    }
+  };
+
+  // Load posts, categories, and languages
+  useEffect(() => {
+    fetchPosts(page);
+  }, [search, category, language, accessLevel, date, page]);
+
+  useEffect(() => {
+    fetchCategories();
+    fetchLanguages();
+  }, []);
+
   return (
     <Box sx={{ p: 3, minHeight: "100vh" }}>
-      {/* Modern Header */}
+      {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Box
           display="flex"
@@ -137,10 +191,7 @@ const PostsPage = () => {
             </Typography>
             <Typography
               variant="body1"
-              sx={{
-                color: "#64748b",
-                fontSize: "1.1rem",
-              }}
+              sx={{ color: "#64748b", fontSize: "1.1rem" }}
             >
               Manage and organize your content posts
             </Typography>
@@ -171,163 +222,88 @@ const PostsPage = () => {
         </Box>
       </Box>
 
-      {/* Modern Filters Card */}
+      {/* Filters */}
       <Paper
         elevation={0}
-        sx={{
-          borderRadius: "20px",
-          border: "1px solid #e2e8f0",
-          boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-          mb: 3,
-        }}
+        sx={{ borderRadius: "20px", border: "1px solid #e2e8f0", mb: 3 }}
       >
         <CardContent sx={{ p: 3 }}>
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              mb: 3,
-              gap: 1,
-            }}
-          >
+          <Box sx={{ display: "flex", alignItems: "center", mb: 3, gap: 1 }}>
             <FilterIcon sx={{ color: "#3b82f6" }} />
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: 600,
-                color: "#1a202c",
-              }}
-            >
+            <Typography variant="h6" sx={{ fontWeight: 600, color: "#1a202c" }}>
               Filters
             </Typography>
           </Box>
           <Grid container spacing={3}>
+            {/* Search */}
             <Grid item xs={12} sm={6} md={2.4}>
               <TextField
                 fullWidth
                 label="Search Posts"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by title..."
-                sx={{
-                  width: "100%",
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: "12px",
-                    "&:hover fieldset": {
-                      borderColor: "#3b82f6",
-                    },
-                    "&.Mui-focused fieldset": {
-                      borderColor: "#3b82f6",
-                    },
-                  },
-                  "& .MuiInputLabel-root.Mui-focused": {
-                    color: "#3b82f6",
-                  },
-                }}
+                sx={{ minWidth: "200px" }}
               />
             </Grid>
+
+            {/* Category */}
             <Grid item xs={12} sm={6} md={2.4}>
-              <FormControl fullWidth sx={{ width: "100%" }}>
-                <InputLabel sx={{ "&.Mui-focused": { color: "#3b82f6" } }}>
-                  Category
-                </InputLabel>
+              <FormControl fullWidth sx={{ minWidth: "200px" }}>
+                <InputLabel>Category</InputLabel>
                 <Select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  label="Category"
-                  fullWidth
-                  sx={{
-                    width: "100%",
-                    minWidth: 120,
-                    borderRadius: "12px",
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#e2e8f0",
-                    },
-                    "&:hover .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#3b82f6",
-                    },
-                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#3b82f6",
-                    },
-                  }}
                 >
                   <MenuItem value="">All Categories</MenuItem>
                   {categories.map((cat) => (
-                    <MenuItem key={cat} value={cat}>
-                      {cat}
+                    <MenuItem key={cat._id || cat.id} value={cat._id || cat.id}>
+                      {cat.name || cat.categoryName}
                     </MenuItem>
                   ))}
                 </Select>
               </FormControl>
             </Grid>
+
+            {/* Language */}
             <Grid item xs={12} sm={6} md={2.4}>
-              <FormControl fullWidth sx={{ width: "100%" }}>
-                <InputLabel sx={{ "&.Mui-focused": { color: "#3b82f6" } }}>
-                  Language
-                </InputLabel>
+              <FormControl fullWidth sx={{ minWidth: "200px" }}>
+                <InputLabel>Language</InputLabel>
                 <Select
                   value={language}
                   onChange={(e) => setLanguage(e.target.value)}
-                  label="Language"
-                  fullWidth
-                  sx={{
-                    minWidth: 120,
-                    width: "100%",
-                    borderRadius: "12px",
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#e2e8f0",
-                    },
-                    "&:hover .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#3b82f6",
-                    },
-                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#3b82f6",
-                    },
-                  }}
                 >
                   <MenuItem value="">All Languages</MenuItem>
                   {languages.map((lang) => (
-                    <MenuItem key={lang} value={lang}>
-                      {lang}
+                    <MenuItem
+                      key={lang._id || lang.id}
+                      value={lang._id || lang.id}
+                    >
+                      {lang.language}
                     </MenuItem>
                   ))}
                 </Select>
               </FormControl>
             </Grid>
+
+            {/* Access Level */}
             <Grid item xs={12} sm={6} md={2.4}>
-              <FormControl fullWidth sx={{ width: "100%" }}>
-                <InputLabel sx={{ "&.Mui-focused": { color: "#3b82f6" } }}>
-                  Access Level
-                </InputLabel>
+              <FormControl fullWidth sx={{ minWidth: "200px" }}>
+                <InputLabel>Access Level</InputLabel>
                 <Select
                   value={accessLevel}
                   onChange={(e) => setAccessLevel(e.target.value)}
-                  label="Access Level"
-                  fullWidth
-                  sx={{
-                    minWidth: 120,
-                    width: "100%",
-                    borderRadius: "12px",
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#e2e8f0",
-                    },
-                    "&:hover .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#3b82f6",
-                    },
-                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#3b82f6",
-                    },
-                  }}
                 >
                   <MenuItem value="">All Access Levels</MenuItem>
                   {accessLevels.map((level) => (
-                    <MenuItem key={level} value={level}>
-                      {level}
+                    <MenuItem key={level.value} value={level.value}>
+                      {level.label}
                     </MenuItem>
                   ))}
                 </Select>
               </FormControl>
             </Grid>
+
+            {/* Date */}
             <Grid item xs={12} sm={6} md={2.4}>
               <TextField
                 fullWidth
@@ -336,36 +312,17 @@ const PostsPage = () => {
                 InputLabelProps={{ shrink: true }}
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                sx={{
-                  width: "100%",
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: "12px",
-                    "&:hover fieldset": {
-                      borderColor: "#3b82f6",
-                    },
-                    "&.Mui-focused fieldset": {
-                      borderColor: "#3b82f6",
-                    },
-                  },
-                  "& .MuiInputLabel-root.Mui-focused": {
-                    color: "#3b82f6",
-                  },
-                }}
+                sx={{ minWidth: "200px" }}
               />
             </Grid>
           </Grid>
         </CardContent>
       </Paper>
 
-      {/* Modern Table */}
+      {/* Table */}
       <Paper
         elevation={0}
-        sx={{
-          borderRadius: "20px",
-          border: "1px solid #e2e8f0",
-          boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-          overflow: "hidden",
-        }}
+        sx={{ borderRadius: "20px", border: "1px solid #e2e8f0" }}
       >
         <TableContainer>
           <Table>
@@ -375,199 +332,74 @@ const PostsPage = () => {
               }}
             >
               <TableRow>
-                <TableCell
-                  sx={{
-                    color: "white",
-                    fontWeight: 600,
-                    fontSize: "0.95rem",
-                    py: 2,
-                  }}
-                >
-                  ID
-                </TableCell>
-                <TableCell
-                  sx={{
-                    color: "white",
-                    fontWeight: 600,
-                    fontSize: "0.95rem",
-                    py: 2,
-                  }}
-                >
-                  Title
-                </TableCell>
-                <TableCell
-                  sx={{
-                    color: "white",
-                    fontWeight: 600,
-                    fontSize: "0.95rem",
-                    py: 2,
-                  }}
-                >
-                  Category
-                </TableCell>
-                <TableCell
-                  sx={{
-                    color: "white",
-                    fontWeight: 600,
-                    fontSize: "0.95rem",
-                    py: 2,
-                  }}
-                >
-                  Language
-                </TableCell>
-                <TableCell
-                  sx={{
-                    color: "white",
-                    fontWeight: 600,
-                    fontSize: "0.95rem",
-                    py: 2,
-                  }}
-                >
-                  Access Level
-                </TableCell>
-                <TableCell
-                  sx={{
-                    color: "white",
-                    fontWeight: 600,
-                    fontSize: "0.95rem",
-                    py: 2,
-                  }}
-                >
-                  Status
-                </TableCell>
-                <TableCell
-                  sx={{
-                    color: "white",
-                    fontWeight: 600,
-                    fontSize: "0.95rem",
-                    py: 2,
-                  }}
-                >
-                  Date
-                </TableCell>
-                <TableCell
-                  sx={{
-                    color: "white",
-                    fontWeight: 600,
-                    fontSize: "0.95rem",
-                    py: 2,
-                    textAlign: "center",
-                  }}
-                >
-                  Actions
-                </TableCell>
+                {[
+                  "ID",
+                  "Title",
+                  "Category",
+                  "Language",
+                  "Access Level",
+                  "Status",
+                  "Date",
+                  "Actions",
+                ].map((header) => (
+                  <TableCell
+                    key={header}
+                    sx={{ color: "white", fontWeight: 600 }}
+                  >
+                    {header}
+                  </TableCell>
+                ))}
               </TableRow>
             </TableHead>
             <TableBody>
               {posts.map((post, index) => (
-                <TableRow
-                  key={post.id}
-                  sx={{
-                    "&:hover": {
-                      bgcolor: "#f8fafc",
-                    },
-                    "&:nth-of-type(even)": {
-                      bgcolor: "#fafbfc",
-                    },
-                  }}
-                >
-                  <TableCell sx={{ fontWeight: 500, color: "#374151" }}>
-                    #{post.id.toString().padStart(3, "0")}
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      fontWeight: 500,
-                      color: "#1a202c",
-                      maxWidth: "200px",
-                    }}
-                  >
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                        fontWeight: 500,
-                      }}
-                    >
-                      {post.title}
-                    </Typography>
-                  </TableCell>
+                <TableRow key={post._id || post.id}>
+                  <TableCell>#{index + 1}</TableCell>
+                  <TableCell>{post.title}</TableCell>
                   <TableCell>
                     <Chip
-                      label={post.category}
+                      label={post.category?.name || post.category}
                       size="small"
-                      sx={{
-                        bgcolor: "#eff6ff",
-                        color: "#1d4ed8",
-                        fontWeight: 500,
-                        borderRadius: "8px",
-                      }}
+                      sx={{ bgcolor: "#eff6ff", color: "#1d4ed8" }}
                     />
                   </TableCell>
-                  <TableCell sx={{ color: "#4b5563", fontWeight: 500 }}>
-                    {post.language}
+                  <TableCell>
+                    <Chip
+                      label={post.language?.language || post.language}
+                      size="small"
+                      sx={{ bgcolor: "#f0f9ff", color: "#0369a1" }}
+                    />
                   </TableCell>
                   <TableCell>
                     <Chip
-                      label={post.accessLevel}
+                      label={
+                        accessLevels.find(
+                          (lvl) => lvl.value === post.accessLevel
+                        )?.label || post.accessLevel
+                      }
                       size="small"
-                      sx={{
-                        ...getAccessLevelColor(post.accessLevel),
-                        fontWeight: 500,
-                        borderRadius: "8px",
-                        fontSize: "0.75rem",
-                      }}
+                      sx={getAccessLevelColor(post.accessLevel)}
                     />
                   </TableCell>
                   <TableCell>
                     <Chip
                       label={post.status}
                       size="small"
-                      sx={{
-                        ...getStatusColor(post.status),
-                        fontWeight: 500,
-                        borderRadius: "8px",
-                      }}
+                      sx={getStatusColor(post.status)}
                     />
                   </TableCell>
-                  <TableCell sx={{ color: "#6b7280", fontWeight: 500 }}>
+                  <TableCell>
                     {new Date(post.date).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
-                    <Stack
-                      direction="row"
-                      spacing={0.5}
-                      justifyContent="center"
-                    >
-                      <Tooltip title="View Post">
-                        <IconButton
-                          size="small"
-                          sx={{
-                            color: "#3b82f6",
-                            bgcolor: "#eff6ff",
-                            "&:hover": {
-                              bgcolor: "#dbeafe",
-                              transform: "scale(1.1)",
-                            },
-                            transition: "all 0.2s ease",
-                          }}
-                        >
-                          <Visibility fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
+                    <Stack direction="row" spacing={0.5}>
                       <Tooltip title="Edit Post">
                         <IconButton
                           size="small"
-                          sx={{
-                            color: "#f59e0b",
-                            bgcolor: "#fef3c7",
-                            "&:hover": {
-                              bgcolor: "#fde68a",
-                              transform: "scale(1.1)",
-                            },
-                            transition: "all 0.2s ease",
-                          }}
+                          sx={{ color: "#f59e0b" }}
+                          onClick={() =>
+                            navigate(`/admin/posts/edit/${post._id}`)
+                          }
                         >
                           <Edit fontSize="small" />
                         </IconButton>
@@ -575,14 +407,10 @@ const PostsPage = () => {
                       <Tooltip title="Delete Post">
                         <IconButton
                           size="small"
-                          sx={{
-                            color: "#ef4444",
-                            bgcolor: "#fef2f2",
-                            "&:hover": {
-                              bgcolor: "#fecaca",
-                              transform: "scale(1.1)",
-                            },
-                            transition: "all 0.2s ease",
+                          sx={{ color: "#ef4444" }}
+                          onClick={() => {
+                            setSelectedPost(post);
+                            setOpenConfirm(true);
                           }}
                         >
                           <Delete fontSize="small" />
@@ -596,38 +424,35 @@ const PostsPage = () => {
           </Table>
         </TableContainer>
 
-        {/* Modern Pagination */}
-        <Box
-          sx={{
-            p: 3,
-            display: "flex",
-            justifyContent: "center",
-            borderTop: "1px solid #e2e8f0",
-          }}
-        >
+        {/* Pagination */}
+        <Box sx={{ p: 3, display: "flex", justifyContent: "center" }}>
           <Pagination
-            count={5}
-            sx={{
-              "& .MuiPaginationItem-root": {
-                borderRadius: "8px",
-                fontWeight: 500,
-                "&.Mui-selected": {
-                  background:
-                    "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                  color: "white",
-                  "&:hover": {
-                    background:
-                      "linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)",
-                  },
-                },
-                "&:hover": {
-                  bgcolor: "#f1f5f9",
-                },
-              },
-            }}
+            count={totalPages}
+            page={page}
+            onChange={(e, value) => setPage(value)}
           />
         </Box>
       </Paper>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={openConfirm} onClose={() => setOpenConfirm(false)}>
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          Are you sure you want to delete the post{" "}
+          <strong>{selectedPost?.title}</strong>?
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenConfirm(false)}>Cancel</Button>
+          <Button
+            onClick={handleDelete}
+            color="error"
+            variant="contained"
+            autoFocus
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

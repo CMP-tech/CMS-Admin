@@ -1,5 +1,5 @@
 // pages/LanguagesPage.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -18,40 +18,74 @@ import {
   Tooltip,
   Pagination,
   Stack,
+  Chip,
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import { Add, Edit, Delete } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import axiosInstance from "../../axiosInstance";
+// import axiosInstance from "../utils/axiosInstance";
 
 const LanguagesPage = () => {
   const [search, setSearch] = useState("");
+  const [languages, setLanguages] = useState([]);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const [loading, setLoading] = useState(false);
 
-  const languages = [
-    { id: 1, language: "English", slug: "en" },
-    { id: 2, language: "Spanish", slug: "es" },
-    { id: 3, language: "French", slug: "fr" },
-    { id: 4, language: "German", slug: "de" },
-    { id: 5, language: "Italian", slug: "it" },
-    { id: 6, language: "Portuguese", slug: "pt" },
-    { id: 7, language: "Chinese", slug: "zh" },
-    { id: 8, language: "Japanese", slug: "ja" },
-    { id: 9, language: "Korean", slug: "ko" },
-    { id: 10, language: "Hindi", slug: "hi" },
-  ];
+  const [openConfirm, setOpenConfirm] = useState(false);
+  const [selectedId, setSelectedId] = useState(null);
 
   const navigate = useNavigate();
 
-  const filteredLanguages = languages.filter(
-    (language) =>
-      language.language.toLowerCase().includes(search.toLowerCase()) ||
-      language.slug.toLowerCase().includes(search.toLowerCase())
-  );
+  // Fetch Languages
+  const fetchLanguages = async () => {
+    try {
+      setLoading(true);
+      const res = await axiosInstance.get("/languages", {
+        params: { page, limit: 5, search },
+      });
+
+      setLanguages(res.data.data);
+      setPages(res.data.pages);
+    } catch (error) {
+      toast.error("Error fetching languages");
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLanguages();
+  }, [page, search]);
 
   const handleEdit = (id) => {
     navigate(`/admin/languages/edit/${id}`);
   };
 
-  const handleDelete = (id) => {
-    console.log("Delete language with id:", id);
+  const handleDeleteClick = (id) => {
+    setSelectedId(id);
+    setOpenConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await axiosInstance.delete(`/languages/${selectedId}`);
+      toast.success("Language deleted successfully");
+      fetchLanguages();
+    } catch (error) {
+      toast.error("Failed to delete language");
+      console.error(error);
+    } finally {
+      setOpenConfirm(false);
+      setSelectedId(null);
+    }
   };
 
   return (
@@ -110,15 +144,7 @@ const LanguagesPage = () => {
       </Box>
 
       {/* Search Filter Card */}
-      <Paper
-        elevation={0}
-        sx={{
-          borderRadius: "20px",
-          border: "1px solid #e2e8f0",
-          boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-          mb: 3,
-        }}
-      >
+      <Paper elevation={0} sx={{ borderRadius: "20px", mb: 3 }}>
         <CardContent sx={{ p: 3 }}>
           <Grid container spacing={2}>
             <Grid item xs={12} md={6}>
@@ -127,20 +153,9 @@ const LanguagesPage = () => {
                 label="Search Languages"
                 placeholder="Search by name or slug..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: "12px",
-                    "&:hover fieldset": {
-                      borderColor: "#3b82f6",
-                    },
-                    "&.Mui-focused fieldset": {
-                      borderColor: "#3b82f6",
-                    },
-                  },
-                  "& .MuiInputLabel-root.Mui-focused": {
-                    color: "#3b82f6",
-                  },
+                onChange={(e) => {
+                  setPage(1);
+                  setSearch(e.target.value);
                 }}
               />
             </Grid>
@@ -149,170 +164,120 @@ const LanguagesPage = () => {
       </Paper>
 
       {/* Table */}
-      <Paper
-        elevation={0}
-        sx={{
-          borderRadius: "20px",
-          border: "1px solid #e2e8f0",
-          boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-          overflow: "hidden",
-        }}
-      >
-        <TableContainer>
-          <Table>
-            <TableHead
-              sx={{
-                background: "linear-gradient(135deg, #1f2937 0%, #111827 100%)",
-              }}
-            >
-              <TableRow>
-                <TableCell sx={{ color: "white", fontWeight: 600, py: 2 }}>
-                  ID
-                </TableCell>
-                <TableCell sx={{ color: "white", fontWeight: 600, py: 2 }}>
-                  Language
-                </TableCell>
-                <TableCell sx={{ color: "white", fontWeight: 600, py: 2 }}>
-                  Slug
-                </TableCell>
-                <TableCell
-                  sx={{
-                    color: "white",
-                    fontWeight: 600,
-                    py: 2,
-                    textAlign: "center",
-                  }}
-                >
-                  Actions
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredLanguages.map((language, index) => (
-                <TableRow
-                  key={language.id}
-                  sx={{
-                    "&:hover": { bgcolor: "#f8fafc" },
-                    "&:nth-of-type(even)": { bgcolor: "#fafbfc" },
-                  }}
-                >
-                  <TableCell sx={{ fontWeight: 500, color: "#374151" }}>
-                    #{language.id.toString().padStart(3, "0")}
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 500, color: "#1a202c" }}>
-                    {language.language}
-                  </TableCell>
-                  <TableCell>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        fontFamily: "monospace",
-                        bgcolor: "#eff6ff",
-                        px: 1,
-                        py: 0.5,
-                        borderRadius: "6px",
-                        display: "inline-block",
-                        color: "#1d4ed8",
-                        fontWeight: 500,
-                      }}
-                    >
-                      {language.slug}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Stack
-                      direction="row"
-                      spacing={0.5}
-                      justifyContent="center"
-                    >
-                      <Tooltip title="Edit Language">
-                        <IconButton
-                          size="small"
-                          sx={{
-                            color: "#f59e0b",
-                            bgcolor: "#fef3c7",
-                            "&:hover": {
-                              bgcolor: "#fde68a",
-                              transform: "scale(1.1)",
-                            },
-                            transition: "all 0.2s ease",
-                          }}
-                          onClick={() => handleEdit(language.id)}
-                        >
-                          <Edit fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Delete Language">
-                        <IconButton
-                          size="small"
-                          sx={{
-                            color: "#ef4444",
-                            bgcolor: "#fef2f2",
-                            "&:hover": {
-                              bgcolor: "#fecaca",
-                              transform: "scale(1.1)",
-                            },
-                            transition: "all 0.2s ease",
-                          }}
-                          onClick={() => handleDelete(language.id)}
-                        >
-                          <Delete fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </Stack>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-
-        {/* No Results */}
-        {filteredLanguages.length === 0 && (
-          <Box
-            display="flex"
-            justifyContent="center"
-            alignItems="center"
-            py={4}
-          >
-            <Typography variant="body1" color="text.secondary">
-              No languages found matching your search criteria.
-            </Typography>
+      <Paper elevation={0} sx={{ borderRadius: "20px", overflow: "hidden" }}>
+        {loading ? (
+          <Box display="flex" justifyContent="center" py={5}>
+            <CircularProgress />
           </Box>
-        )}
+        ) : (
+          <>
+            <TableContainer>
+              <Table>
+                <TableHead sx={{ background: "#111827" }}>
+                  <TableRow>
+                    <TableCell sx={{ color: "white" }}>ID</TableCell>
+                    <TableCell sx={{ color: "white" }}>Language</TableCell>
+                    <TableCell sx={{ color: "white" }}>Slug</TableCell>
+                    <TableCell sx={{ color: "white" }}>Status</TableCell>
+                    <TableCell sx={{ color: "white", textAlign: "center" }}>
+                      Actions
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {languages.map((language, index) => (
+                    <TableRow key={language._id}>
+                      <TableCell sx={{ fontWeight: "bold" }}>
+                        {language._id}
+                      </TableCell>
+                      <TableCell>{language.language}</TableCell>
+                      <TableCell>
+                        {" "}
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontFamily: "monospace",
+                            bgcolor: "#eff6ff",
+                            px: 1,
+                            py: 0.5,
+                            borderRadius: "6px",
+                            display: "inline-block",
+                            color: "#1d4ed8",
+                          }}
+                        >
+                          {language.slug}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={language.isDraft ? "Draft" : "Published"}
+                          color={language.isDraft ? "warning" : "success"}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell align="center">
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          justifyContent="center"
+                        >
+                          <Tooltip title="Edit Language">
+                            <IconButton
+                              onClick={() => handleEdit(language._id)}
+                            >
+                              <Edit fontSize="small" color="warning" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Delete Language">
+                            <IconButton
+                              onClick={() => handleDeleteClick(language._id)}
+                            >
+                              <Delete fontSize="small" color="error" />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
 
-        {/* Pagination */}
-        <Box
-          sx={{
-            p: 3,
-            display: "flex",
-            justifyContent: "center",
-            borderTop: "1px solid #e2e8f0",
-          }}
-        >
-          <Pagination
-            count={2}
-            sx={{
-              "& .MuiPaginationItem-root": {
-                borderRadius: "8px",
-                fontWeight: 500,
-                "&.Mui-selected": {
-                  background:
-                    "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                  color: "white",
-                  "&:hover": {
-                    background:
-                      "linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)",
-                  },
-                },
-                "&:hover": {
-                  bgcolor: "#f1f5f9",
-                },
-              },
-            }}
-          />
-        </Box>
+            {languages.length === 0 && (
+              <Box py={4} textAlign="center">
+                <Typography>No languages found.</Typography>
+              </Box>
+            )}
+
+            {pages > 1 && (
+              <Box py={2} display="flex" justifyContent="center">
+                <Pagination
+                  count={pages}
+                  page={page}
+                  onChange={(e, v) => setPage(v)}
+                />
+              </Box>
+            )}
+          </>
+        )}
       </Paper>
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={openConfirm} onClose={() => setOpenConfirm(false)}>
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete this language? This action cannot be
+            undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenConfirm(false)}>Cancel</Button>
+          <Button onClick={confirmDelete} color="error" variant="contained">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

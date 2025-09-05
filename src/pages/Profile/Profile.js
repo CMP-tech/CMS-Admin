@@ -1,5 +1,5 @@
 // pages/ProfilePage.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   TextField,
@@ -23,30 +23,29 @@ import {
   ArrowBack as ArrowBackIcon,
   Person as PersonIcon,
   Email as EmailIcon,
-  Phone as PhoneIcon,
   CalendarToday as CalendarIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import axiosInstance from "../../axiosInstance";
 
 const ProfilePage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [success, setSuccess] = useState(false);
-
+  const [errors, setErrors] = useState({});
   const navigate = useNavigate();
 
-  const [profileData, setProfileData] = useState({
-    firstName: "Roshan",
-    lastName: "Admin",
-    email: "roshan@admin.com",
-    phone: "+1 (555) 123-4567",
-    location: "New York, USA",
-    position: "System Administrator",
-    department: "IT Department",
-    joinDate: "January 15, 2020",
-    lastLogin: "2 hours ago",
-  });
+  // Load admin details from localStorage
+  const storedAdmin = localStorage.getItem("adminDetails");
+  const adminDetails = storedAdmin ? JSON.parse(storedAdmin) : null;
 
-  const [errors, setErrors] = useState({});
+  const [profileData, setProfileData] = useState({
+    name: adminDetails?.name || "",
+    email: adminDetails?.email || "",
+    role: adminDetails?.role || "",
+    joinDate: "January 15, 2020", // dummy (replace if you have)
+    lastLogin: "2 hours ago", // dummy (replace if you have)
+  });
 
   const handleInputChange = (field) => (event) => {
     setProfileData({
@@ -61,30 +60,44 @@ const ProfilePage = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!profileData.firstName.trim()) {
-      newErrors.firstName = "First name is required";
-    }
-
-    if (!profileData.lastName.trim()) {
-      newErrors.lastName = "Last name is required";
-    }
-
-    if (!profileData.email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(profileData.email)) {
-      newErrors.email = "Email is invalid";
+    if (!profileData.name.trim()) {
+      newErrors.name = "Name is required";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSave = () => {
-    if (validateForm()) {
-      console.log("Saving profile...", profileData);
+  const handleSave = async () => {
+    if (!validateForm()) return;
+
+    try {
+      const token = localStorage.getItem("token");
+
+      const { data } = await axiosInstance.put(
+        "/users/profile", // ✅ update to match your backend route
+        { name: profileData.name, email: profileData.email },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      // Update localStorage with new details
+      localStorage.setItem("adminDetails", JSON.stringify(data));
+
+      setProfileData({
+        ...profileData,
+        name: data.name,
+        email: data.email,
+      });
+
       setIsEditing(false);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
+    } catch (error) {
+      console.error("Profile update failed:", error);
     }
   };
 
@@ -201,25 +214,17 @@ const ProfilePage = () => {
                           "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
                       }}
                     >
-                      {profileData.firstName.charAt(0)}
-                      {profileData.lastName.charAt(0)}
+                      {profileData.name.charAt(0)}
                     </Avatar>
                   </Badge>
                 </Box>
 
                 {/* User Info */}
                 <Typography variant="h5" fontWeight={700} sx={{ mb: 1 }}>
-                  {profileData.firstName} {profileData.lastName}
-                </Typography>
-                <Typography
-                  variant="body1"
-                  color="text.secondary"
-                  sx={{ mb: 2 }}
-                >
-                  {profileData.position}
+                  {profileData.name}
                 </Typography>
                 <Chip
-                  label="Administrator"
+                  label={profileData.role}
                   color="primary"
                   sx={{ borderRadius: "8px", fontWeight: 600, mb: 3 }}
                 />
@@ -234,10 +239,10 @@ const ProfilePage = () => {
                       justifyContent: "center",
                     }}
                   >
-                    <CalendarIcon color="primary" sx={{ fontSize: 20 }} />
-                    <Typography variant="body2" color="text.secondary">
+                    {/* <CalendarIcon color="primary" sx={{ fontSize: 20 }} /> */}
+                    {/* <Typography variant="body2" color="text.secondary">
                       Joined {profileData.joinDate}
-                    </Typography>
+                    </Typography> */}
                   </Box>
                   <Box
                     sx={{
@@ -247,17 +252,17 @@ const ProfilePage = () => {
                       justifyContent: "center",
                     }}
                   >
-                    <Box
+                    {/* <Box
                       sx={{
                         width: 8,
                         height: 8,
                         borderRadius: "50%",
                         bgcolor: "success.main",
                       }}
-                    />
-                    <Typography variant="body2" color="text.secondary">
+                    /> */}
+                    {/* <Typography variant="body2" color="text.secondary">
                       Last active {profileData.lastLogin}
-                    </Typography>
+                    </Typography> */}
                   </Box>
                 </Stack>
               </CardContent>
@@ -343,15 +348,15 @@ const ProfilePage = () => {
 
                 {/* Basic Info */}
                 <Grid container spacing={3}>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item xs={12}>
                     <TextField
-                      label="First Name"
-                      value={profileData.firstName}
-                      onChange={handleInputChange("firstName")}
+                      label="Name"
+                      value={profileData.name}
+                      onChange={handleInputChange("name")}
                       fullWidth
                       disabled={!isEditing}
-                      error={!!errors.firstName}
-                      helperText={errors.firstName}
+                      error={!!errors.name}
+                      helperText={errors.name}
                       InputProps={{
                         startAdornment: (
                           <PersonIcon sx={{ mr: 1, color: "text.secondary" }} />
@@ -375,26 +380,21 @@ const ProfilePage = () => {
                       }}
                     />
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item xs={12}>
                     <TextField
-                      label="Last Name"
-                      value={profileData.lastName}
-                      onChange={handleInputChange("lastName")}
+                      label="Email Address"
+                      value={profileData.email}
                       fullWidth
-                      disabled={!isEditing}
-                      error={!!errors.lastName}
-                      helperText={errors.lastName}
+                      disabled // Always disabled
+                      InputProps={{
+                        startAdornment: (
+                          <EmailIcon sx={{ mr: 1, color: "text.secondary" }} />
+                        ),
+                      }}
                       sx={{
                         "& .MuiOutlinedInput-root": {
                           borderRadius: "16px",
                           fontSize: "1rem",
-                          "&:hover fieldset": {
-                            borderColor: isEditing ? "#3b82f6" : "default",
-                          },
-                          "&.Mui-focused fieldset": {
-                            borderColor: "#3b82f6",
-                            borderWidth: "2px",
-                          },
                         },
                         "& .MuiInputLabel-root.Mui-focused": {
                           color: "#3b82f6",
@@ -403,91 +403,6 @@ const ProfilePage = () => {
                     />
                   </Grid>
                 </Grid>
-
-                {/* Contact Info */}
-                <Box mt={4}>
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      fontWeight: 600,
-                      color: "#374151",
-                      mb: 3,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1,
-                    }}
-                  >
-                    📧 Contact Information
-                  </Typography>
-                  <Grid container spacing={3}>
-                    <Grid item xs={12} sm={6}>
-                      <TextField
-                        label="Email Address"
-                        value={profileData.email}
-                        onChange={handleInputChange("email")}
-                        fullWidth
-                        disabled={!isEditing}
-                        error={!!errors.email}
-                        helperText={errors.email}
-                        InputProps={{
-                          startAdornment: (
-                            <EmailIcon
-                              sx={{ mr: 1, color: "text.secondary" }}
-                            />
-                          ),
-                        }}
-                        sx={{
-                          "& .MuiOutlinedInput-root": {
-                            borderRadius: "16px",
-                            fontSize: "1rem",
-                            "&:hover fieldset": {
-                              borderColor: isEditing ? "#3b82f6" : "default",
-                            },
-                            "&.Mui-focused fieldset": {
-                              borderColor: "#3b82f6",
-                              borderWidth: "2px",
-                            },
-                          },
-                          "& .MuiInputLabel-root.Mui-focused": {
-                            color: "#3b82f6",
-                          },
-                        }}
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <TextField
-                        label="Phone Number"
-                        value={profileData.phone}
-                        onChange={handleInputChange("phone")}
-                        fullWidth
-                        disabled={!isEditing}
-                        InputProps={{
-                          startAdornment: (
-                            <PhoneIcon
-                              sx={{ mr: 1, color: "text.secondary" }}
-                            />
-                          ),
-                        }}
-                        sx={{
-                          "& .MuiOutlinedInput-root": {
-                            borderRadius: "16px",
-                            fontSize: "1rem",
-                            "&:hover fieldset": {
-                              borderColor: isEditing ? "#3b82f6" : "default",
-                            },
-                            "&.Mui-focused fieldset": {
-                              borderColor: "#3b82f6",
-                              borderWidth: "2px",
-                            },
-                          },
-                          "& .MuiInputLabel-root.Mui-focused": {
-                            color: "#3b82f6",
-                          },
-                        }}
-                      />
-                    </Grid>
-                  </Grid>
-                </Box>
               </CardContent>
             </Paper>
           </Grid>

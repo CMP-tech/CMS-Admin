@@ -1,4 +1,4 @@
-// pages/AddLanguagePage.jsx
+// pages/EditLanguagePage.jsx
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -13,27 +13,33 @@ import {
   Autocomplete,
   Alert,
   CircularProgress,
+  Skeleton,
 } from "@mui/material";
 import {
   Save as SaveIcon,
-  Add as AddIcon,
+  Edit as EditIcon,
   ArrowBack as ArrowBackIcon,
 } from "@mui/icons-material";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import axiosInstance from "../../axiosInstance";
+// Adjust path to your axios instance
 
-const AddLanguagePage = () => {
+const EditLanguagePage = () => {
   const [formData, setFormData] = useState({
     language: "",
     slug: "",
     description: "",
+    isDraft: true,
   });
+  const [originalData, setOriginalData] = useState({});
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [fetchLoading, setFetchLoading] = useState(true);
   const [apiError, setApiError] = useState("");
 
   const navigate = useNavigate();
+  const { id } = useParams(); // Get language ID from URL params
 
   // Comprehensive list of languages with their names
   const languageOptions = [
@@ -124,6 +130,51 @@ const AddLanguagePage = () => {
     return language.toLowerCase().trim().substring(0, 2);
   };
 
+  // Fetch existing language data
+  useEffect(() => {
+    const fetchLanguage = async () => {
+      if (!id) {
+        navigate("/admin/languages");
+        return;
+      }
+
+      try {
+        setFetchLoading(true);
+        setApiError("");
+
+        const response = await axiosInstance.get(`languages/${id}`);
+
+        if (response.status === 200) {
+          const languageData = response.data;
+          setFormData({
+            language: languageData.language,
+            slug: languageData.slug,
+            description: languageData.description,
+            isDraft: languageData.isDraft,
+          });
+          setOriginalData(languageData);
+        }
+      } catch (error) {
+        let errorMessage = "Failed to fetch language data";
+
+        if (error.response?.status === 404) {
+          errorMessage = "Language not found";
+          setTimeout(() => navigate("/admin/languages"), 2000);
+        } else if (error.response) {
+          errorMessage = error.response.data.message || errorMessage;
+        } else if (error.request) {
+          errorMessage = "Network error. Please check your connection.";
+        }
+
+        setApiError(errorMessage);
+      } finally {
+        setFetchLoading(false);
+      }
+    };
+
+    fetchLanguage();
+  }, [id, navigate]);
+
   const handleLanguageChange = (event, value) => {
     if (value) {
       const slug = generateSlug(value);
@@ -175,33 +226,42 @@ const AddLanguagePage = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // API call to create language (draft or published)
-  const createLanguageAPI = async (languageData, isDraft = true) => {
+  // Check if form has changes
+  const hasChanges = () => {
+    return (
+      formData.language !== originalData.language ||
+      formData.slug !== originalData.slug ||
+      formData.description !== originalData.description ||
+      formData.isDraft !== originalData.isDraft
+    );
+  };
+
+  // API call to update language
+  const updateLanguageAPI = async (languageData, isDraft) => {
     try {
       setLoading(true);
       setApiError("");
 
       const payload = {
-        ...languageData,
+        language: languageData.language,
+        slug: languageData.slug,
+        description: languageData.description,
         isDraft: isDraft,
       };
 
-      const response = await axiosInstance.post("/languages", payload);
+      const response = await axiosInstance.put(`/languages/${id}`, payload);
 
-      if (response.status === 201) {
+      if (response.status === 200) {
         return { success: true, data: response.data };
       }
     } catch (error) {
-      let errorMessage = "Failed to create language";
+      let errorMessage = "Failed to update language";
 
       if (error.response) {
-        // Server responded with error status
         errorMessage = error.response.data.message || errorMessage;
       } else if (error.request) {
-        // Request was made but no response received
         errorMessage = "Network error. Please check your connection.";
       } else {
-        // Something else happened
         errorMessage = error.message || errorMessage;
       }
 
@@ -215,20 +275,14 @@ const AddLanguagePage = () => {
   const handleSaveDraft = async () => {
     if (!validateForm()) return;
 
-    const result = await createLanguageAPI(formData, true); // Save as draft
+    const result = await updateLanguageAPI(formData, true);
 
     if (result.success) {
       setSuccess(true);
+      setOriginalData({ ...formData, isDraft: true });
 
-      // Reset form after successful submission
       setTimeout(() => {
-        setFormData({
-          language: "",
-          slug: "",
-          description: "",
-        });
         setSuccess(false);
-        // Navigate back to languages list
         navigate("/admin/languages");
       }, 2000);
     } else {
@@ -240,20 +294,14 @@ const AddLanguagePage = () => {
   const handlePublish = async () => {
     if (!validateForm()) return;
 
-    const result = await createLanguageAPI(formData, false); // Publish directly
+    const result = await updateLanguageAPI(formData, false);
 
     if (result.success) {
       setSuccess(true);
+      setOriginalData({ ...formData, isDraft: false });
 
-      // Reset form after successful submission
       setTimeout(() => {
-        setFormData({
-          language: "",
-          slug: "",
-          description: "",
-        });
         setSuccess(false);
-        // Navigate back to languages list
         navigate("/admin/languages");
       }, 2000);
     } else {
@@ -261,11 +309,63 @@ const AddLanguagePage = () => {
     }
   };
 
+  // Loading skeleton
+  if (fetchLoading) {
+    return (
+      <Box sx={{ minHeight: "100vh" }} p={3}>
+        <Container maxWidth="md">
+          <Skeleton variant="text" sx={{ fontSize: "2rem", mb: 2 }} />
+          <Skeleton variant="text" sx={{ fontSize: "1rem", mb: 4 }} />
+          <Paper sx={{ borderRadius: "20px", p: 4 }}>
+            <Stack spacing={4}>
+              <Box>
+                <Skeleton variant="text" sx={{ fontSize: "1.5rem", mb: 3 }} />
+                <Stack spacing={3}>
+                  <Skeleton
+                    variant="rectangular"
+                    height={56}
+                    sx={{ borderRadius: "16px" }}
+                  />
+                  <Skeleton
+                    variant="rectangular"
+                    height={56}
+                    sx={{ borderRadius: "16px" }}
+                  />
+                </Stack>
+              </Box>
+              <Box>
+                <Skeleton variant="text" sx={{ fontSize: "1.5rem", mb: 2 }} />
+                <Skeleton
+                  variant="rectangular"
+                  height={120}
+                  sx={{ borderRadius: "16px" }}
+                />
+              </Box>
+              <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end" }}>
+                <Skeleton
+                  variant="rectangular"
+                  width={120}
+                  height={48}
+                  sx={{ borderRadius: "12px" }}
+                />
+                <Skeleton
+                  variant="rectangular"
+                  width={140}
+                  height={48}
+                  sx={{ borderRadius: "12px" }}
+                />
+              </Box>
+            </Stack>
+          </Paper>
+        </Container>
+      </Box>
+    );
+  }
+
   return (
     <Box
       sx={{
         minHeight: "100vh",
-        // bgcolor: "#f8fafc",
       }}
       p={3}
     >
@@ -303,7 +403,7 @@ const AddLanguagePage = () => {
               WebkitTextFillColor: "transparent",
             }}
           >
-            Add New Language
+            Edit Language
           </Typography>
           <Typography
             variant="body1"
@@ -312,7 +412,24 @@ const AddLanguagePage = () => {
               fontSize: "1.1rem",
             }}
           >
-            Configure language settings for your application
+            Update language settings for your application
+            {formData.isDraft && (
+              <Box
+                component="span"
+                sx={{
+                  ml: 2,
+                  px: 2,
+                  py: 0.5,
+                  bgcolor: "#fef3c7",
+                  color: "#d97706",
+                  borderRadius: "12px",
+                  fontSize: "0.875rem",
+                  fontWeight: 500,
+                }}
+              >
+                Draft
+              </Box>
+            )}
           </Typography>
         </Box>
 
@@ -326,7 +443,7 @@ const AddLanguagePage = () => {
               fontSize: "1rem",
             }}
           >
-            Language saved successfully!
+            Language updated successfully!
           </Alert>
         )}
 
@@ -502,7 +619,8 @@ const AddLanguagePage = () => {
                     disabled={
                       loading ||
                       !formData.language.trim() ||
-                      !formData.description.trim()
+                      !formData.description.trim() ||
+                      !hasChanges()
                     }
                     sx={{
                       borderRadius: "12px",
@@ -535,14 +653,15 @@ const AddLanguagePage = () => {
                       loading ? (
                         <CircularProgress size={20} color="inherit" />
                       ) : (
-                        <AddIcon />
+                        <EditIcon />
                       )
                     }
                     onClick={handlePublish}
                     disabled={
                       loading ||
                       !formData.language.trim() ||
-                      !formData.description.trim()
+                      !formData.description.trim() ||
+                      !hasChanges()
                     }
                     sx={{
                       borderRadius: "12px",
@@ -570,10 +689,23 @@ const AddLanguagePage = () => {
                       transition: "all 0.3s ease",
                     }}
                   >
-                    {loading ? "Publishing..." : "Publish Language"}
+                    {loading ? "Updating..." : "Update & Publish"}
                   </Button>
                 </Stack>
               </Box>
+
+              {/* No Changes Message */}
+              {!hasChanges() && (
+                <Alert
+                  severity="info"
+                  sx={{
+                    borderRadius: "16px",
+                    fontSize: "0.95rem",
+                  }}
+                >
+                  No changes detected. Modify the form to enable saving.
+                </Alert>
+              )}
             </Stack>
           </CardContent>
         </Paper>
@@ -582,4 +714,4 @@ const AddLanguagePage = () => {
   );
 };
 
-export default AddLanguagePage;
+export default EditLanguagePage;

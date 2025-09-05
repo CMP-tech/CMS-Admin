@@ -5,12 +5,10 @@ import {
   TextField,
   Typography,
   Button,
-  Card,
   CardContent,
   Paper,
   Stack,
   Container,
-  Alert,
   IconButton,
   InputAdornment,
   LinearProgress,
@@ -32,6 +30,9 @@ import {
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 
+import { toast } from "react-toastify";
+import axiosInstance from "../../axiosInstance";
+
 const ChangePasswordPage = () => {
   const [showPasswords, setShowPasswords] = useState({
     current: false,
@@ -39,7 +40,6 @@ const ChangePasswordPage = () => {
     confirm: false,
   });
 
-  const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
@@ -106,7 +106,6 @@ const ChangePasswordPage = () => {
       ...passwordData,
       [field]: event.target.value,
     });
-    // Clear error for this field
     if (errors[field]) {
       setErrors({ ...errors, [field]: "" });
     }
@@ -152,29 +151,46 @@ const ChangePasswordPage = () => {
 
     if (validateForm()) {
       setLoading(true);
+      setErrors({});
 
-      // Simulate API call
-      setTimeout(() => {
-        console.log("Changing password...", {
-          currentPassword: passwordData.currentPassword,
-          newPassword: passwordData.newPassword,
+      try {
+        const response = await axiosInstance.put(
+          "/users/change-password", // adjust this to match your backend route
+          {
+            oldPassword: passwordData.currentPassword,
+            newPassword: passwordData.newPassword,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`, // adjust if you store token differently
+            },
+          }
+        );
+
+        toast.success(
+          response.data.message || "Password updated successfully!"
+        );
+
+        setPasswordData({
+          currentPassword: "",
+          newPassword: "",
+          confirmPassword: "",
         });
 
-        setLoading(false);
-        setSuccess(true);
-
-        // Reset form after successful submission
+        // Auto logout after password change
         setTimeout(() => {
-          setPasswordData({
-            currentPassword: "",
-            newPassword: "",
-            confirmPassword: "",
-          });
-          setSuccess(false);
-          // Optionally navigate back
-          // navigate("/admin/profile");
+          localStorage.removeItem("token");
+          navigate("/login");
         }, 3000);
-      }, 2000);
+      } catch (error) {
+        if (error.response) {
+          toast.error(error.response.data.message || "Something went wrong");
+        } else {
+          toast.error("Network error. Please try again.");
+        }
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -187,13 +203,7 @@ const ChangePasswordPage = () => {
   ];
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        // bgcolor: "#f8fafc",
-      }}
-      p={3}
-    >
+    <Box sx={{ minHeight: "100vh" }} p={3}>
       <Container maxWidth="md">
         {/* Back Button */}
         <Box sx={{ mb: 1 }}>
@@ -215,7 +225,7 @@ const ChangePasswordPage = () => {
           </Button>
         </Box>
 
-        {/* Modern Header */}
+        {/* Header */}
         <Box sx={{ mb: 4 }}>
           <Typography
             variant="h4"
@@ -240,21 +250,6 @@ const ChangePasswordPage = () => {
             Keep your account secure with a strong password
           </Typography>
         </Box>
-
-        {/* Success Alert */}
-        {success && (
-          <Alert
-            severity="success"
-            sx={{
-              mb: 3,
-              borderRadius: "16px",
-              fontSize: "1rem",
-            }}
-          >
-            Password changed successfully! You will be logged out shortly for
-            security.
-          </Alert>
-        )}
 
         <Box
           sx={{
@@ -323,22 +318,6 @@ const ChangePasswordPage = () => {
                           </InputAdornment>
                         ),
                       }}
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          borderRadius: "16px",
-                          fontSize: "1rem",
-                          "&:hover fieldset": {
-                            borderColor: "#3b82f6",
-                          },
-                          "&.Mui-focused fieldset": {
-                            borderColor: "#3b82f6",
-                            borderWidth: "2px",
-                          },
-                        },
-                        "& .MuiInputLabel-root.Mui-focused": {
-                          color: "#3b82f6",
-                        },
-                      }}
                     />
 
                     {/* New Password */}
@@ -371,22 +350,6 @@ const ChangePasswordPage = () => {
                               </IconButton>
                             </InputAdornment>
                           ),
-                        }}
-                        sx={{
-                          "& .MuiOutlinedInput-root": {
-                            borderRadius: "16px",
-                            fontSize: "1rem",
-                            "&:hover fieldset": {
-                              borderColor: "#3b82f6",
-                            },
-                            "&.Mui-focused fieldset": {
-                              borderColor: "#3b82f6",
-                              borderWidth: "2px",
-                            },
-                          },
-                          "& .MuiInputLabel-root.Mui-focused": {
-                            color: "#3b82f6",
-                          },
                         }}
                       />
 
@@ -465,22 +428,6 @@ const ChangePasswordPage = () => {
                             </IconButton>
                           </InputAdornment>
                         ),
-                      }}
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          borderRadius: "16px",
-                          fontSize: "1rem",
-                          "&:hover fieldset": {
-                            borderColor: "#3b82f6",
-                          },
-                          "&.Mui-focused fieldset": {
-                            borderColor: "#3b82f6",
-                            borderWidth: "2px",
-                          },
-                        },
-                        "& .MuiInputLabel-root.Mui-focused": {
-                          color: "#3b82f6",
-                        },
                       }}
                     />
 
@@ -604,20 +551,6 @@ const ChangePasswordPage = () => {
                     </ListItem>
                   ))}
                 </List>
-
-                <Alert
-                  severity="info"
-                  sx={{
-                    mt: 3,
-                    borderRadius: "12px",
-                    "& .MuiAlert-message": {
-                      fontSize: "0.9rem",
-                    },
-                  }}
-                >
-                  After changing your password, you'll be automatically logged
-                  out for security purposes.
-                </Alert>
               </CardContent>
             </Paper>
           </Box>

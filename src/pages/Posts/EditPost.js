@@ -22,6 +22,7 @@ import {
   Alert,
   CircularProgress,
   Skeleton,
+  Backdrop,
 } from "@mui/material";
 import {
   Save as SaveIcon,
@@ -29,11 +30,12 @@ import {
   Add as AddIcon,
   Close as CloseIcon,
   ArrowBack as ArrowBackIcon,
+  Edit as EditIcon,
 } from "@mui/icons-material";
 // Use react-quill-new instead of react-quill
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import axiosInstance from "../../axiosInstance";
 
 const apiService = {
@@ -43,7 +45,7 @@ const apiService = {
       const response = await axiosInstance.get("/categories", {
         params: { limit: 100 },
       });
-      return response.data.categories || response.data; // Adjust based on your API response structure
+      return response.data.categories || response.data;
     } catch (error) {
       console.error("Error fetching categories:", error);
       throw error;
@@ -56,33 +58,50 @@ const apiService = {
       const response = await axiosInstance.get("/languages", {
         params: { limit: 100 },
       });
-      return response.data.data || response.data; // Adjust based on your API response structure
+      return response.data.data || response.data;
     } catch (error) {
       console.error("Error fetching languages:", error);
       throw error;
     }
   },
 
-  // Create post
-  createPost: async (postData) => {
+  // Fetch single post by ID
+  fetchPost: async (postId) => {
     try {
-      const response = await axiosInstance.post("/posts", postData);
-      return response.data;
+      const response = await axiosInstance.get(`/posts/${postId}`);
+      return response.data.data || response.data;
     } catch (error) {
-      console.error("Error creating post:", error);
-      // Handle axios error response
+      console.error("Error fetching post:", error);
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
-        "Failed to create post";
+        "Failed to fetch post";
+      throw new Error(errorMessage);
+    }
+  },
+
+  // Update post
+  updatePost: async (postId, postData) => {
+    try {
+      const response = await axiosInstance.put(`/posts/${postId}`, postData);
+      return response.data;
+    } catch (error) {
+      console.error("Error updating post:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to update post";
       throw new Error(errorMessage);
     }
   },
 };
 
-const accessLevels = ["free", "registered", "paid"]; // Keep these as constants since they're likely fixed
+const accessLevels = ["free", "registered", "paid"];
 
-const AddPostPage = () => {
+const EditPostPage = () => {
+  const { postId } = useParams(); // Get post ID from URL params
+  const navigate = useNavigate();
+
   // Form state
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -91,12 +110,14 @@ const AddPostPage = () => {
   const [accessLevel, setAccessLevel] = useState("");
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState("");
+  const [currentStatus, setCurrentStatus] = useState("draft");
 
   // Dynamic data state
   const [categories, setCategories] = useState([]);
   const [languages, setLanguages] = useState([]);
 
   // Loading states
+  const [isLoadingPost, setIsLoadingPost] = useState(true);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const [isLoadingLanguages, setIsLoadingLanguages] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -109,38 +130,70 @@ const AddPostPage = () => {
   });
 
   const tagInputRef = useRef(null);
-  const navigate = useNavigate();
 
-  // Fetch data on component mount
+  // Fetch all initial data on component mount
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        // Fetch categories and languages in parallel
-        const [categoriesData, languagesData] = await Promise.all([
-          apiService.fetchCategories().catch((err) => {
-            console.error("Categories fetch failed:", err);
-            return [];
-          }),
-          apiService.fetchLanguages().catch((err) => {
-            console.error("Languages fetch failed:", err);
-            return [];
-          }),
-        ]);
-        console.log("Fetched categories:", categoriesData);
-        console.log("Fetched languages:", languagesData);
+        // Fetch categories, languages, and post data in parallel
+        const [categoriesData, languagesData, postData] =
+          await Promise.allSettled([
+            apiService.fetchCategories().catch((err) => {
+              console.error("Categories fetch failed:", err);
+              return [];
+            }),
+            apiService.fetchLanguages().catch((err) => {
+              console.error("Languages fetch failed:", err);
+              return [];
+            }),
+            apiService.fetchPost(postId),
+          ]);
 
-        setCategories(categoriesData);
-        setLanguages(languagesData);
-      } catch (error) {
-        showSnackbar("Failed to load initial data", "error");
-      } finally {
+        // Handle categories
+        if (categoriesData.status === "fulfilled") {
+          setCategories(categoriesData.value);
+        }
         setIsLoadingCategories(false);
+
+        // Handle languages
+        if (languagesData.status === "fulfilled") {
+          setLanguages(languagesData.value);
+        }
         setIsLoadingLanguages(false);
+
+        // Handle post data
+        if (postData.status === "fulfilled") {
+          const post = postData.value;
+          setTitle(post.title || "");
+          setBody(post.body || "");
+          setCategory(post.category?._id || post.category || "");
+          setLanguage(post.language?._id || post.language || "");
+          setAccessLevel(post.accessLevel || "");
+          setTags(post.tags || []);
+          setCurrentStatus(post.status || "draft");
+        } else {
+          showSnackbar("Failed to load post data. Please try again.", "error");
+          setTimeout(() => {
+            navigate("/admin/posts");
+          }, 2000);
+        }
+      } catch (error) {
+        showSnackbar("Failed to load data. Please try again.", "error");
+        setTimeout(() => {
+          navigate("/admin/posts");
+        }, 2000);
+      } finally {
+        setIsLoadingPost(false);
       }
     };
 
-    fetchInitialData();
-  }, []);
+    if (postId) {
+      fetchInitialData();
+    } else {
+      showSnackbar("Invalid post ID", "error");
+      navigate("/admin/posts");
+    }
+  }, [postId, navigate]);
 
   const showSnackbar = (message, severity = "success") => {
     setSnackbar({
@@ -197,7 +250,7 @@ const AddPostPage = () => {
     return true;
   };
 
-  const handleSave = async () => {
+  const handleUpdate = async (newStatus = null) => {
     if (!validateForm()) return;
 
     setIsSubmitting(true);
@@ -209,51 +262,39 @@ const AddPostPage = () => {
         language,
         accessLevel,
         tags,
-        status: "draft",
+        status: newStatus || currentStatus,
       };
 
-      const response = await apiService.createPost(postData);
-      showSnackbar("Draft saved successfully!", "success");
+      const response = await apiService.updatePost(postId, postData);
 
-      // Optionally redirect after a delay
+      const actionText =
+        newStatus === "published"
+          ? "published"
+          : newStatus === "draft"
+          ? "saved as draft"
+          : "updated";
+
+      showSnackbar(`Post ${actionText} successfully!`, "success");
+
+      // Update current status if it changed
+      if (newStatus) {
+        setCurrentStatus(newStatus);
+      }
+
+      // Redirect after a delay
       setTimeout(() => {
-        navigate("/admin/posts"); // Adjust route as needed
+        navigate("/admin/posts");
       }, 1500);
     } catch (error) {
-      showSnackbar(error.message || "Failed to save draft", "error");
+      showSnackbar(error.message || "Failed to update post", "error");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handlePublish = async () => {
-    if (!validateForm()) return;
-
-    setIsSubmitting(true);
-    try {
-      const postData = {
-        title: title.trim(),
-        body: body.trim(),
-        category,
-        language,
-        accessLevel,
-        tags,
-        status: "published",
-      };
-
-      const response = await apiService.createPost(postData);
-      showSnackbar("Post published successfully!", "success");
-
-      // Redirect after successful publish
-      setTimeout(() => {
-        navigate("/admin/posts"); // Adjust route as needed
-      }, 1500);
-    } catch (error) {
-      showSnackbar(error.message || "Failed to publish post", "error");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const handleSaveDraft = () => handleUpdate("draft");
+  const handlePublish = () => handleUpdate("published");
+  const handleSaveChanges = () => handleUpdate(); // Keep current status
 
   // Enhanced Quill configuration for better performance
   const quillModules = {
@@ -280,6 +321,28 @@ const AddPostPage = () => {
     "link",
     "image",
   ];
+
+  // Show loading backdrop while initial data is loading
+  if (isLoadingPost) {
+    return (
+      <Backdrop
+        open={true}
+        sx={{ color: "#fff", zIndex: (theme) => theme.zIndex.drawer + 1 }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 2,
+          }}
+        >
+          <CircularProgress color="inherit" size={60} />
+          <Typography variant="h6">Loading post data...</Typography>
+        </Box>
+      </Backdrop>
+    );
+  }
 
   return (
     <Box
@@ -322,17 +385,33 @@ const AddPostPage = () => {
               WebkitTextFillColor: "transparent",
             }}
           >
-            Create New Post
+            Edit Post
           </Typography>
-          <Typography
-            variant="body1"
-            sx={{
-              color: "#64748b",
-              fontSize: "1.1rem",
-            }}
-          >
-            Share your thoughts and ideas with the community
-          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
+            <Typography
+              variant="body1"
+              sx={{
+                color: "#64748b",
+                fontSize: "1.1rem",
+              }}
+            >
+              Make changes to your post
+            </Typography>
+            <Chip
+              label={`Status: ${
+                currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1)
+              }`}
+              color={
+                currentStatus === "published"
+                  ? "success"
+                  : currentStatus === "draft"
+                  ? "warning"
+                  : "default"
+              }
+              size="small"
+              sx={{ fontWeight: 600 }}
+            />
+          </Box>
         </Box>
 
         <Box
@@ -739,29 +818,30 @@ const AddPostPage = () => {
               >
                 <CardContent sx={{ p: 3 }}>
                   <Stack spacing={2}>
+                    {/* Save Changes (keeps current status) */}
                     <Button
                       variant="outlined"
                       startIcon={
                         isSubmitting ? (
                           <CircularProgress size={16} />
                         ) : (
-                          <SaveIcon />
+                          <EditIcon />
                         )
                       }
-                      onClick={handleSave}
+                      onClick={handleSaveChanges}
                       disabled={isSubmitting}
                       fullWidth
                       sx={{
                         borderRadius: "12px",
                         py: 1.5,
-                        borderColor: "#d1d5db",
-                        color: "#374151",
+                        borderColor: "#10b981",
+                        color: "#10b981",
                         fontWeight: 600,
                         textTransform: "none",
                         fontSize: "1rem",
                         "&:hover": {
-                          borderColor: "#9ca3af",
-                          bgcolor: "#f9fafb",
+                          borderColor: "#059669",
+                          bgcolor: "#f0fdf4",
                           transform: !isSubmitting
                             ? "translateY(-1px)"
                             : "none",
@@ -773,8 +853,50 @@ const AddPostPage = () => {
                         transition: "all 0.2s ease",
                       }}
                     >
-                      {isSubmitting ? "Saving..." : "Save Draft"}
+                      {isSubmitting ? "Saving..." : "Save Changes"}
                     </Button>
+
+                    {/* Save as Draft */}
+                    {currentStatus !== "draft" && (
+                      <Button
+                        variant="outlined"
+                        startIcon={
+                          isSubmitting ? (
+                            <CircularProgress size={16} />
+                          ) : (
+                            <SaveIcon />
+                          )
+                        }
+                        onClick={handleSaveDraft}
+                        disabled={isSubmitting}
+                        fullWidth
+                        sx={{
+                          borderRadius: "12px",
+                          py: 1.5,
+                          borderColor: "#d1d5db",
+                          color: "#374151",
+                          fontWeight: 600,
+                          textTransform: "none",
+                          fontSize: "1rem",
+                          "&:hover": {
+                            borderColor: "#9ca3af",
+                            bgcolor: "#f9fafb",
+                            transform: !isSubmitting
+                              ? "translateY(-1px)"
+                              : "none",
+                          },
+                          "&:disabled": {
+                            borderColor: "#e5e7eb",
+                            color: "#9ca3af",
+                          },
+                          transition: "all 0.2s ease",
+                        }}
+                      >
+                        {isSubmitting ? "Saving..." : "Save as Draft"}
+                      </Button>
+                    )}
+
+                    {/* Publish */}
                     <Button
                       variant="contained"
                       startIcon={
@@ -815,7 +937,11 @@ const AddPostPage = () => {
                         transition: "all 0.3s ease",
                       }}
                     >
-                      {isSubmitting ? "Publishing..." : "Publish Post"}
+                      {isSubmitting
+                        ? "Publishing..."
+                        : currentStatus === "published"
+                        ? "Update & Publish"
+                        : "Publish Post"}
                     </Button>
                   </Stack>
                 </CardContent>
@@ -845,4 +971,4 @@ const AddPostPage = () => {
   );
 };
 
-export default AddPostPage;
+export default EditPostPage;

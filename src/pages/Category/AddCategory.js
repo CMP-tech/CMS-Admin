@@ -13,6 +13,9 @@ import {
   Paper,
   Stack,
   Container,
+  Alert,
+  CircularProgress,
+  Snackbar,
 } from "@mui/material";
 import {
   Save as SaveIcon,
@@ -20,20 +23,22 @@ import {
   ArrowBack as ArrowBackIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
-
-// Sample parent categories - you can replace with your actual data
-const parentCategories = [
-  { id: 1, name: "Technology", slug: "technology" },
-  { id: 2, name: "Health", slug: "health" },
-  { id: 3, name: "Education", slug: "education" },
-  { id: 4, name: "Business", slug: "business" },
-];
+import axiosInstance from "../../axiosInstance";
+// import axios from "axios";
 
 const AddCategoryPage = () => {
   const [categoryName, setCategoryName] = useState("");
   const [slug, setSlug] = useState("");
   const [parentCategory, setParentCategory] = useState("");
   const [description, setDescription] = useState("");
+  const [parentCategories, setParentCategories] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [fetchingCategories, setFetchingCategories] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+
+  const navigate = useNavigate();
 
   // Auto-generate slug from category name
   const generateSlug = (name) => {
@@ -46,28 +51,126 @@ const AddCategoryPage = () => {
       .replace(/^-|-$/g, ""); // Remove leading/trailing hyphens
   };
 
+  // Fetch parent categories on component mount
+  useEffect(() => {
+    const fetchParentCategories = async () => {
+      try {
+        setFetchingCategories(true);
+        const response = await axiosInstance.get("/categories");
+        console.log("Fetched categories:", response.data);
+        // Filter only published categories for parent selection
+        // const publishedCategories = response.data.filter(
+        //   (category) => category.status === "published"
+        // );
+        setParentCategories(response.data.categories || []);
+      } catch (error) {
+        console.error("Error fetching parent categories:", error);
+        setError("Failed to fetch parent categories");
+      } finally {
+        setFetchingCategories(false);
+      }
+    };
+
+    fetchParentCategories();
+  }, []);
+
+  // Auto-generate slug when category name changes
   useEffect(() => {
     setSlug(generateSlug(categoryName));
   }, [categoryName]);
 
+  // Generic API call function
+  const handleCategorySubmit = async (status) => {
+    if (!categoryName.trim()) {
+      setError("Category name is required");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError("");
+      setSuccess("");
+
+      const categoryData = {
+        categoryName: categoryName.trim(),
+        slug,
+        parentCategory: parentCategory || null,
+        description: description.trim(),
+        status,
+      };
+
+      // Get token from localStorage or wherever you store it
+      const token = localStorage.getItem("token");
+
+      const config = {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      const response = await axiosInstance.post(
+        "/categories",
+        categoryData,
+        config
+      );
+
+      const successMessage =
+        response.data.message ||
+        `Category ${
+          status === "published" ? "created and published" : "saved as draft"
+        } successfully!`;
+
+      setSuccess(successMessage);
+      setSnackbarOpen(true);
+
+      // Reset form after successful creation
+      setCategoryName("");
+      setSlug("");
+      setParentCategory("");
+      setDescription("");
+
+      // Optionally redirect after a delay
+      setTimeout(() => {
+        navigate("/admin/categories");
+      }, 2000);
+    } catch (error) {
+      console.error("Error creating category:", error);
+
+      let errorMessage = "Failed to create category";
+
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.status === 401) {
+        errorMessage = "Unauthorized. Please login again.";
+      } else if (error.response?.status === 403) {
+        errorMessage = "You don't have permission to create categories.";
+      } else if (error.response?.status === 400) {
+        errorMessage =
+          "Category with this slug already exists or invalid data provided.";
+      }
+
+      setError(errorMessage);
+      setSnackbarOpen(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSave = () => {
-    console.log("Saving category...", {
-      categoryName,
-      slug,
-      parentCategory,
-      description,
-    });
+    handleCategorySubmit("draft");
   };
 
   const handleCreate = () => {
-    console.log("Creating category...", {
-      categoryName,
-      slug,
-      parentCategory,
-      description,
-    });
+    handleCategorySubmit("published");
   };
-  const navigate = useNavigate();
+
+  const handleCloseSnackbar = () => {
+    setSnackbarOpen(false);
+    setError("");
+    setSuccess("");
+  };
 
   return (
     <Box
@@ -78,6 +181,22 @@ const AddCategoryPage = () => {
       p={3}
     >
       <Container maxWidth="md">
+        {/* Snackbar for notifications */}
+        <Snackbar
+          open={snackbarOpen}
+          autoHideDuration={6000}
+          onClose={handleCloseSnackbar}
+          anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        >
+          <Alert
+            onClose={handleCloseSnackbar}
+            severity={error ? "error" : "success"}
+            sx={{ width: "100%" }}
+          >
+            {error || success}
+          </Alert>
+        </Snackbar>
+
         {/* Back Button */}
         <Box sx={{ mb: 1 }}>
           <Button
@@ -124,6 +243,16 @@ const AddCategoryPage = () => {
           </Typography>
         </Box>
 
+        {/* Loading indicator for fetching categories */}
+        {fetchingCategories && (
+          <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+            <CircularProgress size={24} />
+            <Typography sx={{ ml: 2, color: "#64748b" }}>
+              Loading parent categories...
+            </Typography>
+          </Box>
+        )}
+
         {/* Main Content */}
         <Paper
           elevation={0}
@@ -159,6 +288,8 @@ const AddCategoryPage = () => {
                   fullWidth
                   variant="outlined"
                   placeholder="Enter category name (e.g., Web Development)"
+                  required
+                  disabled={loading}
                   sx={{
                     "& .MuiOutlinedInput-root": {
                       borderRadius: "16px",
@@ -209,7 +340,7 @@ const AddCategoryPage = () => {
 
               {/* Parent Category */}
               <Box>
-                <FormControl fullWidth>
+                <FormControl fullWidth disabled={loading || fetchingCategories}>
                   <InputLabel sx={{ "&.Mui-focused": { color: "#3b82f6" } }}>
                     Parent Category (Optional)
                   </InputLabel>
@@ -235,8 +366,8 @@ const AddCategoryPage = () => {
                       <em>None (Top Level Category)</em>
                     </MenuItem>
                     {parentCategories.map((category) => (
-                      <MenuItem key={category.id} value={category.id}>
-                        {category.name}
+                      <MenuItem key={category._id} value={category._id}>
+                        {category.categoryName}
                       </MenuItem>
                     ))}
                   </Select>
@@ -268,6 +399,7 @@ const AddCategoryPage = () => {
                   rows={4}
                   variant="outlined"
                   placeholder="Provide a brief description of what this category contains..."
+                  disabled={loading}
                   sx={{
                     "& .MuiOutlinedInput-root": {
                       borderRadius: "16px",
@@ -292,8 +424,11 @@ const AddCategoryPage = () => {
                 <Stack direction="row" spacing={2} justifyContent="flex-end">
                   <Button
                     variant="outlined"
-                    startIcon={<SaveIcon />}
+                    startIcon={
+                      loading ? <CircularProgress size={16} /> : <SaveIcon />
+                    }
                     onClick={handleSave}
+                    disabled={!categoryName.trim() || loading}
                     sx={{
                       borderRadius: "12px",
                       py: 1.5,
@@ -307,7 +442,11 @@ const AddCategoryPage = () => {
                       "&:hover": {
                         borderColor: "#9ca3af",
                         bgcolor: "#f9fafb",
-                        transform: "translateY(-1px)",
+                        transform: !loading ? "translateY(-1px)" : "none",
+                      },
+                      "&:disabled": {
+                        borderColor: "#e5e7eb",
+                        color: "#9ca3af",
                       },
                       transition: "all 0.2s ease",
                     }}
@@ -316,9 +455,11 @@ const AddCategoryPage = () => {
                   </Button>
                   <Button
                     variant="contained"
-                    startIcon={<AddIcon />}
+                    startIcon={
+                      loading ? <CircularProgress size={16} /> : <AddIcon />
+                    }
                     onClick={handleCreate}
-                    disabled={!categoryName.trim()}
+                    disabled={!categoryName.trim() || loading}
                     sx={{
                       borderRadius: "12px",
                       py: 1.5,
@@ -333,8 +474,10 @@ const AddCategoryPage = () => {
                       "&:hover": {
                         background:
                           "linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)",
-                        transform: "translateY(-2px)",
-                        boxShadow: "0 8px 25px rgba(102, 126, 234, 0.6)",
+                        transform: !loading ? "translateY(-2px)" : "none",
+                        boxShadow: !loading
+                          ? "0 8px 25px rgba(102, 126, 234, 0.6)"
+                          : "0 4px 15px rgba(102, 126, 234, 0.4)",
                       },
                       "&:disabled": {
                         background: "#e5e7eb",

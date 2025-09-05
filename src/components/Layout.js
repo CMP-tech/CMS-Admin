@@ -33,6 +33,7 @@ import {
   Menu,
   MenuItem,
   Chip,
+  CircularProgress,
 } from "@mui/material";
 
 import logo from "../assets/logo-cms.png";
@@ -47,11 +48,60 @@ const Layout = () => {
 
   const [openMenus, setOpenMenus] = useState({});
   const [profileMenuAnchor, setProfileMenuAnchor] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [adminDetails, setAdminDetails] = useState(null);
+
+  // Check authentication on component mount
+  useEffect(() => {
+    const checkAuth = () => {
+      try {
+        // Check for both possible token keys (token and adminToken)
+        const token =
+          localStorage.getItem("token") || localStorage.getItem("adminToken");
+        const storedAdminDetails = localStorage.getItem("adminDetails");
+
+        if (!token) {
+          // No token found, redirect to login
+          navigate("/login", { replace: true });
+          return;
+        }
+
+        // Parse admin details if available
+        if (storedAdminDetails) {
+          try {
+            const parsedDetails = JSON.parse(storedAdminDetails);
+            setAdminDetails(parsedDetails);
+          } catch (error) {
+            console.error("Error parsing admin details:", error);
+          }
+        }
+        console.log("Admin Details:", adminDetails);
+        // Token exists, user is authenticated
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error("Authentication check failed:", error);
+        // Clear potentially corrupted data
+        localStorage.removeItem("token");
+        localStorage.removeItem("adminToken");
+        localStorage.removeItem("adminDetails");
+        navigate("/login", { replace: true });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, [navigate]);
 
   const handleLogout = () => {
+    // Clear all authentication data
+    localStorage.removeItem("token");
     localStorage.removeItem("adminToken");
     localStorage.removeItem("adminDetails");
-    navigate("/login");
+    setIsAuthenticated(false);
+    setAdminDetails(null);
+    navigate("/login", { replace: true });
   };
 
   const handleMenuItemClick = (path) => {
@@ -110,7 +160,7 @@ const Layout = () => {
         { text: "General", path: "/settings/general" },
         { text: "Reading", path: "/settings/reading" },
         { text: "Privacy", path: "/settings/privacy" },
-        { text: "Google Anylayics", path: "/settings/google-analytics" },
+        { text: "Google Analytics", path: "/settings/google-analytics" },
         { text: "Copyright", path: "/settings/copyright" },
       ],
     },
@@ -121,19 +171,49 @@ const Layout = () => {
     },
   ];
 
-  // auto-expand menu if child is active
+  // Auto-expand menu if child is active
   useEffect(() => {
-    menuItems.forEach((item) => {
-      if (item.children) {
-        const hasActiveChild = item.children.some(
-          (child) => child.path === currentPath
-        );
-        if (hasActiveChild) {
-          setOpenMenus((prev) => ({ ...prev, [item.text]: true }));
+    if (isAuthenticated) {
+      menuItems.forEach((item) => {
+        if (item.children) {
+          const hasActiveChild = item.children.some(
+            (child) => child.path === currentPath
+          );
+          if (hasActiveChild) {
+            setOpenMenus((prev) => ({ ...prev, [item.text]: true }));
+          }
         }
-      }
-    });
-  }, [currentPath]);
+      });
+    }
+  }, [currentPath, isAuthenticated]);
+
+  // Show loading spinner while checking authentication
+  if (isLoading) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "100vh",
+          bgcolor: "#f5f6fa",
+        }}
+      >
+        <CircularProgress size={40} />
+      </Box>
+    );
+  }
+
+  // If not authenticated, don't render the layout (redirect will happen)
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  // Get display name from admin details or fallback
+  const displayName =
+    adminDetails?.name || adminDetails?.username || "Admin User";
+  const displayEmail = adminDetails?.email || "admin@example.com";
+  const avatarLetter = displayName.charAt(0).toUpperCase();
 
   return (
     <Box sx={{ display: "flex" }}>
@@ -174,17 +254,17 @@ const Layout = () => {
                 color: "#000",
                 borderRadius: 2,
                 px: 2,
-                "&:hover": { bgcolor: "#1976d2" },
+                "&:hover": { bgcolor: "#f5f5f5" },
               }}
             >
               <Avatar sx={{ bgcolor: "#1976d2", width: 32, height: 32 }}>
-                R
+                {avatarLetter}
               </Avatar>
               <Box
                 sx={{ textAlign: "left", display: { xs: "none", sm: "block" } }}
               >
                 <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  Roshan Admin
+                  {displayName}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
                   Administrator
@@ -212,14 +292,14 @@ const Layout = () => {
               <Box sx={{ p: 2, borderBottom: "1px solid #f0f0f0" }}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                   <Avatar sx={{ bgcolor: "#1976d2", width: 40, height: 40 }}>
-                    R
+                    {avatarLetter}
                   </Avatar>
                   <Box>
                     <Typography variant="subtitle2" fontWeight={600}>
-                      Roshan Admin
+                      {displayName}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      roshan@admin.com
+                      {displayEmail}
                     </Typography>
                   </Box>
                 </Box>
@@ -310,7 +390,7 @@ const Layout = () => {
                         "& .MuiSvgIcon-root": { color: "#fff" },
                         "&:hover": { bgcolor: "#1565c0" },
                       },
-                      "&:hover": { bgcolor: "#1976d2" },
+                      "&:hover": { bgcolor: "#f5f5f5" },
                     }}
                   >
                     <ListItemIcon
@@ -344,7 +424,7 @@ const Layout = () => {
                     sx={{
                       borderRadius: 2,
                       mx: 1,
-                      "&:hover": { bgcolor: "#1976d2" },
+                      "&:hover": { bgcolor: "#f5f5f5" },
                     }}
                   >
                     <ListItemIcon sx={{ color: "#757575", minWidth: 0, mr: 2 }}>
@@ -381,7 +461,7 @@ const Layout = () => {
                                 "& .MuiSvgIcon-root": { color: "#fff" },
                                 "&:hover": { bgcolor: "#1565c0" },
                               },
-                              "&:hover": { bgcolor: "#1976d2" },
+                              "&:hover": { bgcolor: "#f5f5f5" },
                             }}
                           >
                             {child.icon && (
