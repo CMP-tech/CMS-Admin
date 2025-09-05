@@ -45,9 +45,9 @@ const ForgotPassword = () => {
         alignItems: "center",
         justifyContent: "center",
         minHeight: "100vh",
-        background: (theme) =>
-          `linear-gradient(135deg, ${theme.palette.primary.light}, ${theme.palette.secondary.light})`,
-        p: 2,
+        // background: (theme) =>
+        //   `linear-gradient(135deg, ${theme.palette.primary.light}, ${theme.palette.secondary.light})`,
+        // p: 2,
       }}
     >
       <Card

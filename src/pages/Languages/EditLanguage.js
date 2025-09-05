@@ -41,89 +41,8 @@ const EditLanguagePage = () => {
   const navigate = useNavigate();
   const { id } = useParams(); // Get language ID from URL params
 
-  // Comprehensive list of languages with their names
-  const languageOptions = [
-    "Afrikaans",
-    "Albanian",
-    "Amharic",
-    "Arabic",
-    "Armenian",
-    "Azerbaijani",
-    "Basque",
-    "Belarusian",
-    "Bengali",
-    "Bosnian",
-    "Bulgarian",
-    "Burmese",
-    "Catalan",
-    "Chinese",
-    "Croatian",
-    "Czech",
-    "Danish",
-    "Dutch",
-    "English",
-    "Estonian",
-    "Filipino",
-    "Finnish",
-    "French",
-    "Galician",
-    "Georgian",
-    "German",
-    "Greek",
-    "Gujarati",
-    "Hebrew",
-    "Hindi",
-    "Hungarian",
-    "Icelandic",
-    "Indonesian",
-    "Irish",
-    "Italian",
-    "Japanese",
-    "Kannada",
-    "Kazakh",
-    "Khmer",
-    "Korean",
-    "Kurdish",
-    "Kyrgyz",
-    "Lao",
-    "Latvian",
-    "Lithuanian",
-    "Luxembourgish",
-    "Macedonian",
-    "Malay",
-    "Malayalam",
-    "Maltese",
-    "Marathi",
-    "Mongolian",
-    "Nepali",
-    "Norwegian",
-    "Pashto",
-    "Persian",
-    "Polish",
-    "Portuguese",
-    "Punjabi",
-    "Romanian",
-    "Russian",
-    "Serbian",
-    "Sinhala",
-    "Slovak",
-    "Slovenian",
-    "Spanish",
-    "Swahili",
-    "Swedish",
-    "Tamil",
-    "Telugu",
-    "Thai",
-    "Turkish",
-    "Ukrainian",
-    "Urdu",
-    "Uzbek",
-    "Vietnamese",
-    "Welsh",
-    "Xhosa",
-    "Yoruba",
-    "Zulu",
-  ];
+  // Limited list of languages as requested
+  const languageOptions = ["Hindi", "English", "Tamil"];
 
   // Auto-generate slug from language name (first 2 letters)
   const generateSlug = (language) => {
@@ -149,7 +68,7 @@ const EditLanguagePage = () => {
           setFormData({
             language: languageData.language,
             slug: languageData.slug,
-            description: languageData.description,
+            description: languageData.description || "", // Handle optional description
             isDraft: languageData.isDraft,
           });
           setOriginalData(languageData);
@@ -218,9 +137,7 @@ const EditLanguagePage = () => {
       newErrors.language = "Language is required";
     }
 
-    if (!formData.description.trim()) {
-      newErrors.description = "Description is required";
-    }
+    // Description is now optional - no validation needed
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -231,7 +148,7 @@ const EditLanguagePage = () => {
     return (
       formData.language !== originalData.language ||
       formData.slug !== originalData.slug ||
-      formData.description !== originalData.description ||
+      formData.description !== (originalData.description || "") ||
       formData.isDraft !== originalData.isDraft
     );
   };
@@ -245,7 +162,7 @@ const EditLanguagePage = () => {
       const payload = {
         language: languageData.language,
         slug: languageData.slug,
-        description: languageData.description,
+        description: languageData.description.trim() || "", // Ensure empty string if no description
         isDraft: isDraft,
       };
 
@@ -500,7 +417,7 @@ const EditLanguagePage = () => {
                       <TextField
                         {...params}
                         label="Language"
-                        placeholder="Select or type a language..."
+                        placeholder="Select a language..."
                         error={!!errors.language}
                         helperText={errors.language}
                         fullWidth
@@ -523,7 +440,6 @@ const EditLanguagePage = () => {
                         }}
                       />
                     )}
-                    freeSolo
                     autoHighlight
                   />
 
@@ -556,7 +472,7 @@ const EditLanguagePage = () => {
                 </Stack>
               </Box>
 
-              {/* Description Section */}
+              {/* Description Section - Made Optional */}
               <Box>
                 <Typography
                   variant="h6"
@@ -569,21 +485,20 @@ const EditLanguagePage = () => {
                     gap: 1,
                   }}
                 >
-                  📝 Description
+                  📝 Description (Optional)
                 </Typography>
 
                 <TextField
-                  label="Language Description"
+                  label="Language Description (Optional)"
                   value={formData.description}
                   onChange={handleInputChange("description")}
                   fullWidth
                   multiline
                   rows={4}
                   variant="outlined"
-                  placeholder="Provide a brief description of this language (e.g., primary regions where it's spoken, number of speakers, etc.)..."
-                  error={!!errors.description}
-                  helperText={errors.description}
+                  placeholder="Provide a brief description of this language (e.g., primary regions where it's spoken, number of speakers, etc.)... (optional)"
                   disabled={loading}
+                  helperText="You can leave this blank if you don't want to add a description"
                   sx={{
                     "& .MuiOutlinedInput-root": {
                       borderRadius: "16px",
@@ -598,6 +513,11 @@ const EditLanguagePage = () => {
                     },
                     "& .MuiInputLabel-root.Mui-focused": {
                       color: "#3b82f6",
+                    },
+                    "& .MuiFormHelperText-root": {
+                      color: "#64748b",
+                      fontSize: "0.8rem",
+                      mt: 1,
                     },
                   }}
                 />
@@ -617,10 +537,7 @@ const EditLanguagePage = () => {
                     }
                     onClick={handleSaveDraft}
                     disabled={
-                      loading ||
-                      !formData.language.trim() ||
-                      !formData.description.trim() ||
-                      !hasChanges()
+                      loading || !formData.language.trim() || !hasChanges()
                     }
                     sx={{
                       borderRadius: "12px",
@@ -635,7 +552,7 @@ const EditLanguagePage = () => {
                       "&:hover": {
                         borderColor: "#9ca3af",
                         bgcolor: "#f9fafb",
-                        transform: "translateY(-1px)",
+                        transform: !loading ? "translateY(-1px)" : "none",
                       },
                       "&:disabled": {
                         borderColor: "#e5e7eb",
@@ -658,10 +575,7 @@ const EditLanguagePage = () => {
                     }
                     onClick={handlePublish}
                     disabled={
-                      loading ||
-                      !formData.language.trim() ||
-                      !formData.description.trim() ||
-                      !hasChanges()
+                      loading || !formData.language.trim() || !hasChanges()
                     }
                     sx={{
                       borderRadius: "12px",
@@ -677,8 +591,10 @@ const EditLanguagePage = () => {
                       "&:hover": {
                         background:
                           "linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)",
-                        transform: "translateY(-2px)",
-                        boxShadow: "0 8px 25px rgba(102, 126, 234, 0.6)",
+                        transform: !loading ? "translateY(-2px)" : "none",
+                        boxShadow: !loading
+                          ? "0 8px 25px rgba(102, 126, 234, 0.6)"
+                          : "0 4px 15px rgba(102, 126, 234, 0.4)",
                       },
                       "&:disabled": {
                         background: "#e5e7eb",

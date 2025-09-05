@@ -96,7 +96,7 @@ const AddCategoryPage = () => {
         categoryName: categoryName.trim(),
         slug,
         parentCategory: parentCategory || null,
-        description: description.trim(),
+        description: description.trim() || "", // Ensure empty string if no description
         status,
       };
 
@@ -374,7 +374,7 @@ const AddCategoryPage = () => {
                 </FormControl>
               </Box>
 
-              {/* Description */}
+              {/* Description - Made clearly optional */}
               <Box>
                 <Typography
                   variant="h6"
@@ -387,19 +387,20 @@ const AddCategoryPage = () => {
                     gap: 1,
                   }}
                 >
-                  📝 Description
+                  📝 Description (Optional)
                 </Typography>
 
                 <TextField
-                  label="Category Description"
+                  label="Category Description (Optional)"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   fullWidth
                   multiline
                   rows={4}
                   variant="outlined"
-                  placeholder="Provide a brief description of what this category contains..."
+                  placeholder="Provide a brief description of what this category contains... (optional)"
                   disabled={loading}
+                  helperText="You can leave this blank if you don't want to add a description"
                   sx={{
                     "& .MuiOutlinedInput-root": {
                       borderRadius: "16px",
@@ -414,6 +415,11 @@ const AddCategoryPage = () => {
                     },
                     "& .MuiInputLabel-root.Mui-focused": {
                       color: "#3b82f6",
+                    },
+                    "& .MuiFormHelperText-root": {
+                      color: "#64748b",
+                      fontSize: "0.8rem",
+                      mt: 1,
                     },
                   }}
                 />

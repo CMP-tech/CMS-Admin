@@ -330,39 +330,39 @@ const Dashboard = () => {
     </Box>
   );
 
-  const QuickActionCard = ({ icon, title, color, onClick }) => (
-    <Box
-      onClick={onClick}
-      sx={{
-        p: 2,
-        borderRadius: "12px",
-        border: "1px dashed #d1d5db",
-        textAlign: "center",
-        cursor: "pointer",
-        transition: "all 0.2s ease",
-        "&:hover": {
-          borderColor: color,
-          bgcolor: "#f8fafc",
-          transform: "translateY(-1px)",
-        },
-      }}
-    >
-      <Typography
-        variant="body2"
-        sx={{
-          color: color,
-          fontWeight: 600,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 1,
-        }}
-      >
-        {icon}
-        {title}
-      </Typography>
-    </Box>
-  );
+  // const QuickActionCard = ({ icon, title, color, onClick }) => (
+  //   <Box
+  //     onClick={onClick}
+  //     sx={{
+  //       p: 2,
+  //       borderRadius: "12px",
+  //       border: "1px dashed #d1d5db",
+  //       textAlign: "center",
+  //       cursor: "pointer",
+  //       transition: "all 0.2s ease",
+  //       "&:hover": {
+  //         borderColor: color,
+  //         bgcolor: "#f8fafc",
+  //         transform: "translateY(-1px)",
+  //       },
+  //     }}
+  //   >
+  //     <Typography
+  //       variant="body2"
+  //       sx={{
+  //         color: color,
+  //         fontWeight: 600,
+  //         display: "flex",
+  //         alignItems: "center",
+  //         justifyContent: "center",
+  //         gap: 1,
+  //       }}
+  //     >
+  //       {icon}
+  //       {title}
+  //     </Typography>
+  //   </Box>
+  // );
 
   return (
     <Box
@@ -510,7 +510,7 @@ const Dashboard = () => {
           <Grid item xs={12} lg={4}>
             <Stack spacing={3}>
               {/* Performance Card */}
-              <Paper
+              {/* <Paper
                 elevation={0}
                 sx={{
                   borderRadius: "20px",
@@ -647,10 +647,10 @@ const Dashboard = () => {
                     </Box>
                   </Stack>
                 </CardContent>
-              </Paper>
+              </Paper> */}
 
               {/* Quick Actions */}
-              <Paper
+              {/* <Paper
                 elevation={0}
                 sx={{
                   borderRadius: "20px",
@@ -697,7 +697,7 @@ const Dashboard = () => {
                     />
                   </Stack>
                 </CardContent>
-              </Paper>
+              </Paper> */}
             </Stack>
           </Grid>
         </Grid>

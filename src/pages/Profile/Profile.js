@@ -385,7 +385,9 @@ const ProfilePage = () => {
                       label="Email Address"
                       value={profileData.email}
                       fullWidth
-                      disabled // Always disabled
+                      onChange={handleInputChange("email")}
+                      disabled={!isEditing}
+                      // // Always disabled
                       InputProps={{
                         startAdornment: (
                           <EmailIcon sx={{ mr: 1, color: "text.secondary" }} />

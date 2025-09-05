@@ -555,7 +555,7 @@ const EditCategoryPage = () => {
                       gap: 1,
                     }}
                   >
-                    📝 Description
+                    📝 Description(Optional)
                   </Typography>
 
                   <TextField
