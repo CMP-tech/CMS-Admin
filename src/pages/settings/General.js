@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   TextField,
@@ -15,7 +15,10 @@ import {
   Stack,
   Paper,
   Avatar,
+  CircularProgress,
 } from "@mui/material";
+import { toast } from "react-toastify";
+// import axiosInstance from "../utils/axiosInstance"; // Update this path to match your project structure
 import {
   Save as SaveIcon,
   ArrowBack as ArrowBackIcon,
@@ -25,8 +28,12 @@ import {
   Image as ImageIcon,
   Language as LanguageIcon,
   Schedule as ScheduleIcon,
+  Copyright as CopyrightIcon,
+  Share as ShareIcon,
+  CloudUpload as CloudUploadIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
+import axiosInstance from "../../axiosInstance";
 
 const GeneralSettings = () => {
   const navigate = useNavigate();
@@ -40,7 +47,70 @@ const GeneralSettings = () => {
     dateFormat: "august-28-2025",
     timeFormat: "11:09-am",
     weekStartsOn: "monday",
+    copyrightMessage: "",
+    socialMedia: {
+      facebook: "",
+      instagram: "",
+      linkedin: "",
+      twitter: "",
+      youtube: "",
+    },
+    logo: null,
   });
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [logoFile, setLogoFile] = useState(null);
+
+  // Fetch settings on component mount
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      setLoading(true);
+      const response = await axiosInstance.get("/settings");
+      console.log("Fetched settings:", response.data);
+
+      if (response.data.success) {
+        const fetchedSettings = response.data.data;
+        setSettings({
+          siteTitle: fetchedSettings.siteTitle || "",
+          tagline: fetchedSettings.tagline || "",
+          siteAddress:
+            fetchedSettings.siteAddress || "https://chalanachitram.com",
+          adminEmail: fetchedSettings.adminEmail || "admin@chalanachitram.com",
+          timezone: fetchedSettings.timezone || "UTC-5:30",
+          dateFormat: fetchedSettings.dateFormat || "august-28-2025",
+          timeFormat: fetchedSettings.timeFormat || "11:09-am",
+          weekStartsOn: fetchedSettings.weekStartsOn || "monday",
+          copyrightMessage: fetchedSettings.copyrightMessage || "",
+          socialMedia: {
+            facebook: fetchedSettings.socialMedia?.facebook || "",
+            instagram: fetchedSettings.socialMedia?.instagram || "",
+            linkedin: fetchedSettings.socialMedia?.linkedin || "",
+            twitter: fetchedSettings.socialMedia?.twitter || "",
+            youtube: fetchedSettings.socialMedia?.youtube || "",
+          },
+          logo: fetchedSettings.logo
+            ? {
+                preview: fetchedSettings.logo.url,
+                name: "Current Logo",
+                existing: true,
+              }
+            : null,
+        });
+      } else {
+        // toast.error("Failed to fetch settings");
+      }
+    } catch (error) {
+      console.error("Error fetching settings:", error);
+      toast.error("Error loading settings");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (field, value) => {
     setSettings((prev) => ({
@@ -49,12 +119,128 @@ const GeneralSettings = () => {
     }));
   };
 
-  const handleSave = () => {
-    console.log("Saving settings...", settings);
+  const handleSocialMediaChange = (platform, value) => {
+    setSettings((prev) => ({
+      ...prev,
+      socialMedia: {
+        ...prev.socialMedia,
+        [platform]: value,
+      },
+    }));
+  };
+
+  const handleLogoUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        toast.error("Please select a valid image file");
+        return;
+      }
+
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("File size must be less than 5MB");
+        return;
+      }
+
+      setLogoFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setSettings((prev) => ({
+          ...prev,
+          logo: {
+            file: file,
+            preview: e.target.result,
+            name: file.name,
+            existing: false,
+          },
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    setSettings((prev) => ({
+      ...prev,
+      logo: null,
+    }));
+    setLogoFile(null);
+  };
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+
+      // Validate required fields
+      if (!settings.siteTitle.trim()) {
+        toast.error("Site title is required");
+        return;
+      }
+
+      if (
+        !settings.adminEmail.trim() ||
+        !/\S+@\S+\.\S+/.test(settings.adminEmail)
+      ) {
+        toast.error("Valid admin email is required");
+        return;
+      }
+
+      // Prepare form data
+      const formData = new FormData();
+      formData.append("siteTitle", settings.siteTitle);
+      formData.append("tagline", settings.tagline);
+      formData.append("siteAddress", settings.siteAddress);
+      formData.append("adminEmail", settings.adminEmail);
+      formData.append("timezone", settings.timezone);
+      formData.append("dateFormat", settings.dateFormat);
+      formData.append("timeFormat", settings.timeFormat);
+      formData.append("weekStartsOn", settings.weekStartsOn);
+      formData.append("copyrightMessage", settings.copyrightMessage);
+      formData.append("socialMedia", JSON.stringify(settings.socialMedia));
+
+      // Add logo file if there's a new one
+      if (logoFile) {
+        formData.append("logo", logoFile);
+      }
+
+      const response = await axiosInstance.post("/settings/save", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (response.data.success) {
+        toast.success("Settings saved successfully!");
+
+        // Update the logo state with the new URL if a new logo was uploaded
+        if (response.data.data.logo && logoFile) {
+          setSettings((prev) => ({
+            ...prev,
+            logo: {
+              preview: response.data.data.logo.url,
+              name: "Current Logo",
+              existing: true,
+            },
+          }));
+          setLogoFile(null);
+        }
+      } else {
+        toast.error(response.data.msg || "Failed to save settings");
+      }
+    } catch (error) {
+      console.error("Error saving settings:", error);
+      toast.error(
+        error.response?.data?.msg || "Error saving settings. Please try again."
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   const timezones = [
-    { value: "UTC-5:30", label: "UTC-5:30" },
+    { value: "UTC-5:30", label: "UTC-5:30 (India)" },
     { value: "UTC-8:00", label: "UTC-8:00 (Pacific)" },
     { value: "UTC-5:00", label: "UTC-5:00 (Eastern)" },
     { value: "UTC+0:00", label: "UTC+0:00 (London)" },
@@ -70,6 +256,22 @@ const GeneralSettings = () => {
     { value: "saturday", label: "Saturday" },
     { value: "sunday", label: "Sunday" },
   ];
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          bgcolor: "#f8fafc",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <CircularProgress size={60} sx={{ color: "#667eea" }} />
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -168,7 +370,7 @@ const GeneralSettings = () => {
 
                 <Stack spacing={3}>
                   <TextField
-                    label="Site Title"
+                    label="Site Title *"
                     value={settings.siteTitle}
                     onChange={(e) =>
                       handleInputChange("siteTitle", e.target.value)
@@ -176,6 +378,7 @@ const GeneralSettings = () => {
                     fullWidth
                     variant="outlined"
                     placeholder="Enter your site title"
+                    required
                     sx={{
                       "& .MuiOutlinedInput-root": {
                         borderRadius: "12px",
@@ -234,7 +437,7 @@ const GeneralSettings = () => {
                     }}
                   />
 
-                  {/* Site Icon Section */}
+                  {/* Logo Upload Section */}
                   <Box
                     sx={{
                       p: 3,
@@ -255,58 +458,75 @@ const GeneralSettings = () => {
                         sx={{
                           width: 60,
                           height: 60,
-                          bgcolor: "#3b82f6",
+                          bgcolor: settings.logo ? "transparent" : "#3b82f6",
                           fontSize: "1.5rem",
                         }}
+                        src={settings.logo?.preview}
                       >
-                        <ImageIcon />
+                        {!settings.logo && <ImageIcon />}
                       </Avatar>
                       <Box sx={{ flex: 1 }}>
                         <Typography
                           variant="h6"
                           sx={{ fontWeight: 600, mb: 0.5, color: "#1e293b" }}
                         >
-                          Site Icon
+                          Logo
                         </Typography>
                         <Typography variant="body2" sx={{ color: "#64748b" }}>
-                          Add a site icon for browser tabs and mobile apps
+                          {settings.logo
+                            ? `Current logo: ${settings.logo.name}`
+                            : "Upload a logo for your site"}
                         </Typography>
                       </Box>
                     </Box>
                     <Stack direction="row" spacing={2}>
-                      <Button
-                        variant="contained"
-                        sx={{
-                          borderRadius: "8px",
-                          textTransform: "none",
-                          bgcolor: "#3b82f6",
-                          "&:hover": { bgcolor: "#2563eb" },
-                        }}
-                      >
-                        Change Site Icon
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        sx={{
-                          borderRadius: "8px",
-                          textTransform: "none",
-                          borderColor: "#d1d5db",
-                          color: "#374151",
-                          "&:hover": {
-                            borderColor: "#9ca3af",
-                            bgcolor: "#f9fafb",
-                          },
-                        }}
-                      >
-                        Remove Site Icon
-                      </Button>
+                      <input
+                        accept="image/*"
+                        style={{ display: "none" }}
+                        id="logo-upload"
+                        type="file"
+                        onChange={handleLogoUpload}
+                      />
+                      <label htmlFor="logo-upload">
+                        <Button
+                          variant="contained"
+                          component="span"
+                          startIcon={<CloudUploadIcon />}
+                          sx={{
+                            borderRadius: "8px",
+                            textTransform: "none",
+                            bgcolor: "#3b82f6",
+                            "&:hover": { bgcolor: "#2563eb" },
+                          }}
+                        >
+                          {settings.logo ? "Change Logo" : "Upload Logo"}
+                        </Button>
+                      </label>
+                      {settings.logo && (
+                        <Button
+                          variant="outlined"
+                          onClick={handleRemoveLogo}
+                          sx={{
+                            borderRadius: "8px",
+                            textTransform: "none",
+                            borderColor: "#d1d5db",
+                            color: "#374151",
+                            "&:hover": {
+                              borderColor: "#9ca3af",
+                              bgcolor: "#f9fafb",
+                            },
+                          }}
+                        >
+                          Remove Logo
+                        </Button>
+                      )}
                     </Stack>
                     <Typography
                       variant="caption"
                       sx={{ display: "block", mt: 2, color: "#64748b" }}
                     >
-                      The Site Icon should be square and at least 512 × 512
-                      pixels.
+                      The Logo should be square and at least 512 × 512 pixels
+                      for best results. Max file size: 5MB.
                     </Typography>
                   </Box>
                 </Stack>
@@ -403,7 +623,7 @@ const GeneralSettings = () => {
                 </Typography>
 
                 <TextField
-                  label="Administration Email Address"
+                  label="Administration Email Address *"
                   value={settings.adminEmail}
                   onChange={(e) =>
                     handleInputChange("adminEmail", e.target.value)
@@ -411,6 +631,7 @@ const GeneralSettings = () => {
                   fullWidth
                   variant="outlined"
                   type="email"
+                  required
                   helperText="This address is used for admin purposes. If you change this, an email will be sent to your new address to confirm it."
                   sx={{
                     "& .MuiOutlinedInput-root": {
@@ -435,6 +656,265 @@ const GeneralSettings = () => {
                     },
                   }}
                 />
+              </CardContent>
+            </Paper>
+
+            {/* Copyright & Footer Information */}
+            <Paper
+              elevation={0}
+              sx={{
+                borderRadius: "20px",
+                border: "1px solid #e2e8f0",
+                bgcolor: "#ffffff",
+                boxShadow:
+                  "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+              }}
+            >
+              <CardContent sx={{ p: 4 }}>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    mb: 3,
+                    fontWeight: 600,
+                    color: "#1e293b",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                  }}
+                >
+                  <CopyrightIcon sx={{ color: "#3b82f6" }} />
+                  Copyright & Footer Information
+                </Typography>
+
+                <TextField
+                  label="Copyright Message"
+                  value={settings.copyrightMessage}
+                  onChange={(e) =>
+                    handleInputChange("copyrightMessage", e.target.value)
+                  }
+                  fullWidth
+                  variant="outlined"
+                  placeholder="© 2025 Your Company Name. All rights reserved."
+                  helperText="This message will appear in the footer of your site."
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: "12px",
+                      bgcolor: "#f8fafc",
+                      "&:hover": {
+                        bgcolor: "#f1f5f9",
+                      },
+                      "&:hover fieldset": {
+                        borderColor: "#3b82f6",
+                      },
+                      "&.Mui-focused": {
+                        bgcolor: "#ffffff",
+                      },
+                      "&.Mui-focused fieldset": {
+                        borderColor: "#3b82f6",
+                        borderWidth: "2px",
+                      },
+                    },
+                    "& .MuiInputLabel-root.Mui-focused": {
+                      color: "#3b82f6",
+                    },
+                  }}
+                />
+              </CardContent>
+            </Paper>
+
+            {/* Social Media Links */}
+            <Paper
+              elevation={0}
+              sx={{
+                borderRadius: "20px",
+                border: "1px solid #e2e8f0",
+                bgcolor: "#ffffff",
+                boxShadow:
+                  "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+              }}
+            >
+              <CardContent sx={{ p: 4 }}>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    mb: 3,
+                    fontWeight: 600,
+                    color: "#1e293b",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                  }}
+                >
+                  <ShareIcon sx={{ color: "#3b82f6" }} />
+                  Social Media Links
+                </Typography>
+
+                <Stack spacing={3}>
+                  <TextField
+                    label="Facebook URL"
+                    value={settings.socialMedia.facebook}
+                    onChange={(e) =>
+                      handleSocialMediaChange("facebook", e.target.value)
+                    }
+                    fullWidth
+                    variant="outlined"
+                    placeholder="https://facebook.com/yourpage"
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: "12px",
+                        bgcolor: "#f8fafc",
+                        "&:hover": {
+                          bgcolor: "#f1f5f9",
+                        },
+                        "&:hover fieldset": {
+                          borderColor: "#3b82f6",
+                        },
+                        "&.Mui-focused": {
+                          bgcolor: "#ffffff",
+                        },
+                        "&.Mui-focused fieldset": {
+                          borderColor: "#3b82f6",
+                          borderWidth: "2px",
+                        },
+                      },
+                      "& .MuiInputLabel-root.Mui-focused": {
+                        color: "#3b82f6",
+                      },
+                    }}
+                  />
+
+                  <TextField
+                    label="Instagram URL"
+                    value={settings.socialMedia.instagram}
+                    onChange={(e) =>
+                      handleSocialMediaChange("instagram", e.target.value)
+                    }
+                    fullWidth
+                    variant="outlined"
+                    placeholder="https://instagram.com/youraccount"
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: "12px",
+                        bgcolor: "#f8fafc",
+                        "&:hover": {
+                          bgcolor: "#f1f5f9",
+                        },
+                        "&:hover fieldset": {
+                          borderColor: "#3b82f6",
+                        },
+                        "&.Mui-focused": {
+                          bgcolor: "#ffffff",
+                        },
+                        "&.Mui-focused fieldset": {
+                          borderColor: "#3b82f6",
+                          borderWidth: "2px",
+                        },
+                      },
+                      "& .MuiInputLabel-root.Mui-focused": {
+                        color: "#3b82f6",
+                      },
+                    }}
+                  />
+
+                  <TextField
+                    label="LinkedIn URL"
+                    value={settings.socialMedia.linkedin}
+                    onChange={(e) =>
+                      handleSocialMediaChange("linkedin", e.target.value)
+                    }
+                    fullWidth
+                    variant="outlined"
+                    placeholder="https://linkedin.com/in/yourprofile"
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: "12px",
+                        bgcolor: "#f8fafc",
+                        "&:hover": {
+                          bgcolor: "#f1f5f9",
+                        },
+                        "&:hover fieldset": {
+                          borderColor: "#3b82f6",
+                        },
+                        "&.Mui-focused": {
+                          bgcolor: "#ffffff",
+                        },
+                        "&.Mui-focused fieldset": {
+                          borderColor: "#3b82f6",
+                          borderWidth: "2px",
+                        },
+                      },
+                      "& .MuiInputLabel-root.Mui-focused": {
+                        color: "#3b82f6",
+                      },
+                    }}
+                  />
+
+                  <TextField
+                    label="Twitter URL"
+                    value={settings.socialMedia.twitter}
+                    onChange={(e) =>
+                      handleSocialMediaChange("twitter", e.target.value)
+                    }
+                    fullWidth
+                    variant="outlined"
+                    placeholder="https://twitter.com/youraccount"
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: "12px",
+                        bgcolor: "#f8fafc",
+                        "&:hover": {
+                          bgcolor: "#f1f5f9",
+                        },
+                        "&:hover fieldset": {
+                          borderColor: "#3b82f6",
+                        },
+                        "&.Mui-focused": {
+                          bgcolor: "#ffffff",
+                        },
+                        "&.Mui-focused fieldset": {
+                          borderColor: "#3b82f6",
+                          borderWidth: "2px",
+                        },
+                      },
+                      "& .MuiInputLabel-root.Mui-focused": {
+                        color: "#3b82f6",
+                      },
+                    }}
+                  />
+
+                  <TextField
+                    label="YouTube URL"
+                    value={settings.socialMedia.youtube}
+                    onChange={(e) =>
+                      handleSocialMediaChange("youtube", e.target.value)
+                    }
+                    fullWidth
+                    variant="outlined"
+                    placeholder="https://youtube.com/yourchannel"
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: "12px",
+                        bgcolor: "#f8fafc",
+                        "&:hover": {
+                          bgcolor: "#f1f5f9",
+                        },
+                        "&:hover fieldset": {
+                          borderColor: "#3b82f6",
+                        },
+                        "&.Mui-focused": {
+                          bgcolor: "#ffffff",
+                        },
+                        "&.Mui-focused fieldset": {
+                          borderColor: "#3b82f6",
+                          borderWidth: "2px",
+                        },
+                      },
+                      "& .MuiInputLabel-root.Mui-focused": {
+                        color: "#3b82f6",
+                      },
+                    }}
+                  />
+                </Stack>
               </CardContent>
             </Paper>
 
@@ -557,62 +1037,6 @@ const GeneralSettings = () => {
                             }}
                           >
                             <span>August 28, 2025</span>
-                            <Typography
-                              variant="caption"
-                              sx={{ color: "#64748b" }}
-                            >
-                              F j, Y
-                            </Typography>
-                          </Box>
-                        }
-                      />
-                      <FormControlLabel
-                        value="2025-08-28"
-                        control={
-                          <Radio
-                            sx={{
-                              color: "#3b82f6",
-                              "&.Mui-checked": { color: "#3b82f6" },
-                            }}
-                          />
-                        }
-                        label={
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 1,
-                            }}
-                          >
-                            <span>2025-08-28</span>
-                            <Typography
-                              variant="caption"
-                              sx={{ color: "#64748b" }}
-                            >
-                              Y-m-d
-                            </Typography>
-                          </Box>
-                        }
-                      />
-                      <FormControlLabel
-                        value="08/28/2025"
-                        control={
-                          <Radio
-                            sx={{
-                              color: "#3b82f6",
-                              "&.Mui-checked": { color: "#3b82f6" },
-                            }}
-                          />
-                        }
-                        label={
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 1,
-                            }}
-                          >
-                            <span>08/28/2025</span>
                             <Typography
                               variant="caption"
                               sx={{ color: "#64748b" }}
@@ -794,28 +1218,43 @@ const GeneralSettings = () => {
               <CardContent sx={{ p: 3 }}>
                 <Button
                   variant="contained"
-                  startIcon={<SaveIcon />}
+                  startIcon={
+                    saving ? (
+                      <CircularProgress size={20} color="inherit" />
+                    ) : (
+                      <SaveIcon />
+                    )
+                  }
                   onClick={handleSave}
                   fullWidth
+                  disabled={saving}
                   sx={{
                     borderRadius: "12px",
                     py: 1.5,
-                    background:
-                      "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                    background: saving
+                      ? "linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)"
+                      : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
                     fontWeight: 600,
                     textTransform: "none",
                     fontSize: "1rem",
                     boxShadow: "0 4px 15px rgba(102, 126, 234, 0.4)",
                     "&:hover": {
-                      background:
-                        "linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)",
-                      transform: "translateY(-2px)",
-                      boxShadow: "0 8px 25px rgba(102, 126, 234, 0.6)",
+                      background: saving
+                        ? "linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)"
+                        : "linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)",
+                      transform: saving ? "none" : "translateY(-2px)",
+                      boxShadow: saving
+                        ? "0 4px 15px rgba(102, 126, 234, 0.4)"
+                        : "0 8px 25px rgba(102, 126, 234, 0.6)",
+                    },
+                    "&:disabled": {
+                      color: "#ffffff",
+                      opacity: 0.7,
                     },
                     transition: "all 0.3s ease",
                   }}
                 >
-                  Save Changes
+                  {saving ? "Saving Changes..." : "Save Changes"}
                 </Button>
               </CardContent>
             </Paper>
