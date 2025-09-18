@@ -49,6 +49,7 @@ const PostsPage = () => {
   const [languages, setLanguages] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [dateFormat, setDateFormat] = useState("F j, Y"); // Default format
 
   // Confirmation state
   const [openConfirm, setOpenConfirm] = useState(false);
@@ -61,6 +62,71 @@ const PostsPage = () => {
   ];
 
   const navigate = useNavigate();
+
+  // Date format mapping
+  const dateFormats = {
+    "F j, Y": { month: "long", day: "numeric", year: "numeric" },
+    "Y-m-d": "YYYY-MM-DD",
+    "m/d/Y": "MM/DD/YYYY",
+    "d/m/Y": "DD/MM/YYYY",
+    "M j, Y": { month: "short", day: "numeric", year: "numeric" },
+    "j F Y": { day: "numeric", month: "long", year: "numeric" },
+    "d-m-Y": "DD-MM-YYYY",
+    "m-d-Y": "MM-DD-YYYY",
+  };
+
+  // Format date based on selected format
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+
+    const date = new Date(dateString);
+
+    switch (dateFormat) {
+      case "F j, Y":
+        return date.toLocaleDateString("en-US", {
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        });
+      case "Y-m-d":
+        return date.toISOString().split("T")[0];
+      case "m/d/Y":
+        return date.toLocaleDateString("en-US", {
+          month: "2-digit",
+          day: "2-digit",
+          year: "numeric",
+        });
+      case "d/m/Y":
+        return date.toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        });
+      case "M j, Y":
+        return date.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
+      case "j F Y":
+        return date.toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        });
+      case "d-m-Y":
+        const ddmmyyyy = date.toLocaleDateString("en-GB").split("/");
+        return `${ddmmyyyy[0]}-${ddmmyyyy[1]}-${ddmmyyyy[2]}`;
+      case "m-d-Y":
+        const mmddyyyy = date.toLocaleDateString("en-US").split("/");
+        return `${mmddyyyy[0].padStart(2, "0")}-${mmddyyyy[1].padStart(
+          2,
+          "0"
+        )}-${mmddyyyy[2]}`;
+      default:
+        return date.toLocaleDateString();
+    }
+  };
 
   // 🎨 Color coding for Access Levels
   const getAccessLevelColor = (level) => {
@@ -85,6 +151,19 @@ const PostsPage = () => {
         return { bgcolor: "#f3f4f6", color: "#6b7280" };
       default:
         return { bgcolor: "#f3f4f6", color: "#374151" };
+    }
+  };
+
+  // ✅ Fetch general settings
+  const fetchSettings = async () => {
+    try {
+      const response = await axiosInstance.get("/settings");
+      if (response.data.success && response.data.data.dateFormat) {
+        setDateFormat(response.data.data.dateFormat);
+      }
+    } catch (error) {
+      console.error("Error fetching settings:", error);
+      // Keep default format if API fails
     }
   };
 
@@ -155,15 +234,17 @@ const PostsPage = () => {
     }
   };
 
-  // Load posts, categories, and languages
+  // Load settings first, then other data
   useEffect(() => {
-    fetchPosts(page);
-  }, [search, category, language, accessLevel, date, page]);
-
-  useEffect(() => {
+    fetchSettings();
     fetchCategories();
     fetchLanguages();
   }, []);
+
+  // Load posts when filters change
+  useEffect(() => {
+    fetchPosts(page);
+  }, [search, category, language, accessLevel, date, page]);
 
   return (
     <Box sx={{ p: 3, minHeight: "100vh" }}>
@@ -389,7 +470,7 @@ const PostsPage = () => {
                     />
                   </TableCell>
                   <TableCell>
-                    {new Date(post.date).toLocaleDateString()}
+                    {formatDate(post.date || post.createdAt)}
                   </TableCell>
                   <TableCell>
                     <Stack direction="row" spacing={0.5}>

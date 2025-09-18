@@ -37,7 +37,48 @@ import axiosInstance from "../../axiosInstance";
 
 const GeneralSettings = () => {
   const navigate = useNavigate();
-
+  const dateFormats = [
+    {
+      value: "F j, Y",
+      label: "August 28, 2025",
+      description: "F j, Y",
+    },
+    {
+      value: "Y-m-d",
+      label: "2025-08-28",
+      description: "Y-m-d",
+    },
+    {
+      value: "m/d/Y",
+      label: "08/28/2025",
+      description: "m/d/Y",
+    },
+    {
+      value: "d/m/Y",
+      label: "28/08/2025",
+      description: "d/m/Y",
+    },
+    {
+      value: "M j, Y",
+      label: "Aug 28, 2025",
+      description: "M j, Y",
+    },
+    {
+      value: "j F Y",
+      label: "28 August 2025",
+      description: "j F Y",
+    },
+    {
+      value: "d-m-Y",
+      label: "28-08-2025",
+      description: "d-m-Y",
+    },
+    {
+      value: "m-d-Y",
+      label: "08-28-2025",
+      description: "m-d-Y",
+    },
+  ];
   const [settings, setSettings] = useState({
     siteTitle: "",
     tagline: "",
@@ -1018,40 +1059,45 @@ const GeneralSettings = () => {
                         handleInputChange("dateFormat", e.target.value)
                       }
                     >
-                      <FormControlLabel
-                        value="august-28-2025"
-                        control={
-                          <Radio
-                            sx={{
-                              color: "#3b82f6",
-                              "&.Mui-checked": { color: "#3b82f6" },
-                            }}
-                          />
-                        }
-                        label={
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 1,
-                            }}
-                          >
-                            <span>August 28, 2025</span>
-                            <Typography
-                              variant="caption"
-                              sx={{ color: "#64748b" }}
+                      {dateFormats.map((format) => (
+                        <FormControlLabel
+                          key={format.value}
+                          value={format.value}
+                          control={
+                            <Radio
+                              sx={{
+                                color: "#3b82f6",
+                                "&.Mui-checked": { color: "#3b82f6" },
+                              }}
+                            />
+                          }
+                          label={
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
+                              }}
                             >
-                              m/d/Y
-                            </Typography>
-                          </Box>
-                        }
-                      />
+                              <span>{format.label}</span>
+                              <Typography
+                                variant="caption"
+                                sx={{ color: "#64748b" }}
+                              >
+                                {format.description}
+                              </Typography>
+                            </Box>
+                          }
+                        />
+                      ))}
                     </RadioGroup>
                     <Typography
                       variant="caption"
                       sx={{ color: "#64748b", display: "block", mt: 1 }}
                     >
-                      Preview: August 28, 2025
+                      Preview:{" "}
+                      {dateFormats.find((f) => f.value === settings.dateFormat)
+                        ?.label || "August 28, 2025"}
                     </Typography>
                   </Box>
 

@@ -27,16 +27,40 @@ import {
   Add as AddIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
+import axiosInstance from "../../axiosInstance";
 
 const Dashboard = () => {
   const navigate = useNavigate();
 
-  const [stats] = useState({
-    posts: { count: 1247, change: "+12%", trend: "up" },
-    languages: { count: 28, change: "+3", trend: "up" },
-    categories: { count: 45, change: "+5", trend: "up" },
-    views: { count: 8924, change: "+18%", trend: "up" },
+  const [stats, setStats] = useState({
+    posts: { count: 0, change: "+0%", trend: "up" },
+    languages: { count: 0, change: "+0", trend: "up" },
+    categories: { count: 0, change: "+0", trend: "up" },
+    views: { count: 0, change: "+0%", trend: "up" }, // You can later fetch real views
   });
+
+  useEffect(() => {
+    const fetchCounts = async () => {
+      try {
+        const res = await axiosInstance.get("/dashboard/count"); // adjust baseURL if needed
+        if (res.data.success) {
+          setStats((prev) => ({
+            ...prev,
+            posts: { ...prev.posts, count: res.data.counts.posts },
+            languages: { ...prev.languages, count: res.data.counts.langs },
+            categories: {
+              ...prev.categories,
+              count: res.data.counts.categories,
+            },
+          }));
+        }
+      } catch (err) {
+        console.error("Error fetching stats:", err);
+      }
+    };
+
+    fetchCounts();
+  }, []);
 
   const [latestActivities] = useState([
     {
