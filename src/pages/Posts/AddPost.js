@@ -22,6 +22,7 @@ import {
   Alert,
   CircularProgress,
   Skeleton,
+  CardMedia,
 } from "@mui/material";
 import {
   Save as SaveIcon,
@@ -29,6 +30,9 @@ import {
   Add as AddIcon,
   Close as CloseIcon,
   ArrowBack as ArrowBackIcon,
+  CloudUpload as CloudUploadIcon,
+  Delete as DeleteIcon,
+  Image as ImageIcon,
 } from "@mui/icons-material";
 // Use react-quill-new instead of react-quill
 import ReactQuill from "react-quill-new";
@@ -63,10 +67,14 @@ const apiService = {
     }
   },
 
-  // Create post
+  // Create post with FormData for file upload
   createPost: async (postData) => {
     try {
-      const response = await axiosInstance.post("/posts", postData);
+      const response = await axiosInstance.post("/posts", postData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
       return response.data;
     } catch (error) {
       console.error("Error creating post:", error);
@@ -91,6 +99,8 @@ const AddPostPage = () => {
   const [accessLevel, setAccessLevel] = useState("");
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState("");
+  const [bannerImage, setBannerImage] = useState(null);
+  const [bannerImagePreview, setBannerImagePreview] = useState("");
 
   // Dynamic data state
   const [categories, setCategories] = useState([]);
@@ -109,6 +119,7 @@ const AddPostPage = () => {
   });
 
   const tagInputRef = useRef(null);
+  const fileInputRef = useRef(null);
   const navigate = useNavigate();
 
   // Fetch data on component mount
@@ -173,6 +184,41 @@ const AddPostPage = () => {
     setTags(tags.filter((tag) => tag !== tagToRemove));
   };
 
+  // Banner image handlers
+  const handleBannerImageSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        showSnackbar("Please select a valid image file", "error");
+        return;
+      }
+
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        showSnackbar("Image size should be less than 5MB", "error");
+        return;
+      }
+
+      setBannerImage(file);
+
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file);
+      setBannerImagePreview(previewUrl);
+    }
+  };
+
+  const handleRemoveBannerImage = () => {
+    setBannerImage(null);
+    if (bannerImagePreview) {
+      URL.revokeObjectURL(bannerImagePreview);
+      setBannerImagePreview("");
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   const validateForm = () => {
     if (!title.trim()) {
       showSnackbar("Please enter a title", "error");
@@ -197,22 +243,35 @@ const AddPostPage = () => {
     return true;
   };
 
+  const createFormData = (status) => {
+    const formData = new FormData();
+    formData.append("title", title.trim());
+    formData.append("body", body.trim());
+    formData.append("category", category);
+    formData.append("language", language);
+    formData.append("accessLevel", accessLevel);
+    formData.append("status", status);
+
+    // Append tags as JSON string or individual entries
+    tags.forEach((tag, index) => {
+      formData.append(`tags[${index}]`, tag);
+    });
+
+    // Append banner image if selected
+    if (bannerImage) {
+      formData.append("bannerImage", bannerImage);
+    }
+
+    return formData;
+  };
+
   const handleSave = async () => {
     if (!validateForm()) return;
 
     setIsSubmitting(true);
     try {
-      const postData = {
-        title: title.trim(),
-        body: body.trim(),
-        category,
-        language,
-        accessLevel,
-        tags,
-        status: "draft",
-      };
-
-      const response = await apiService.createPost(postData);
+      const formData = createFormData("draft");
+      const response = await apiService.createPost(formData);
       showSnackbar("Draft saved successfully!", "success");
 
       // Optionally redirect after a delay
@@ -231,17 +290,8 @@ const AddPostPage = () => {
 
     setIsSubmitting(true);
     try {
-      const postData = {
-        title: title.trim(),
-        body: body.trim(),
-        category,
-        language,
-        accessLevel,
-        tags,
-        status: "published",
-      };
-
-      const response = await apiService.createPost(postData);
+      const formData = createFormData("published");
+      const response = await apiService.createPost(formData);
       showSnackbar("Post published successfully!", "success");
 
       // Redirect after successful publish
@@ -360,6 +410,124 @@ const AddPostPage = () => {
               }}
             >
               <CardContent sx={{ p: 4 }}>
+                {/* Banner Image Upload Section */}
+                <Box sx={{ mb: 4 }}>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      mb: 2,
+                      fontWeight: 600,
+                      color: "#374151",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                    }}
+                  >
+                    <ImageIcon /> Banner Image
+                  </Typography>
+
+                  {bannerImagePreview ? (
+                    <Box sx={{ position: "relative", mb: 2 }}>
+                      <CardMedia
+                        component="img"
+                        sx={{
+                          height: 200,
+                          borderRadius: "12px",
+                          objectFit: "cover",
+                          border: "2px solid #e2e8f0",
+                        }}
+                        image={bannerImagePreview}
+                        alt="Banner preview"
+                      />
+                      <IconButton
+                        onClick={handleRemoveBannerImage}
+                        sx={{
+                          position: "absolute",
+                          top: 8,
+                          right: 8,
+                          bgcolor: "rgba(239, 68, 68, 0.9)",
+                          color: "white",
+                          "&:hover": {
+                            bgcolor: "rgba(220, 38, 38, 0.9)",
+                          },
+                          width: 36,
+                          height: 36,
+                        }}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Box>
+                  ) : (
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        border: "2px dashed #d1d5db",
+                        borderRadius: "12px",
+                        p: 3,
+                        textAlign: "center",
+                        bgcolor: "#f9fafb",
+                        cursor: "pointer",
+                        transition: "all 0.2s ease",
+                        "&:hover": {
+                          borderColor: "#3b82f6",
+                          bgcolor: "#eff6ff",
+                        },
+                      }}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <CloudUploadIcon
+                        sx={{
+                          fontSize: 48,
+                          color: "#9ca3af",
+                          mb: 1,
+                        }}
+                      />
+                      <Typography
+                        variant="body1"
+                        sx={{
+                          color: "#374151",
+                          fontWeight: 500,
+                          mb: 0.5,
+                        }}
+                      >
+                        Click to upload banner image
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: "#6b7280" }}>
+                        Supports JPG, PNG, GIF up to 5MB
+                      </Typography>
+                    </Paper>
+                  )}
+
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleBannerImageSelect}
+                    accept="image/*"
+                    style={{ display: "none" }}
+                  />
+
+                  {!bannerImagePreview && (
+                    <Button
+                      variant="outlined"
+                      startIcon={<CloudUploadIcon />}
+                      onClick={() => fileInputRef.current?.click()}
+                      sx={{
+                        mt: 1,
+                        borderRadius: "8px",
+                        textTransform: "none",
+                        borderColor: "#d1d5db",
+                        color: "#374151",
+                        "&:hover": {
+                          borderColor: "#3b82f6",
+                          bgcolor: "#eff6ff",
+                        },
+                      }}
+                    >
+                      Choose Banner Image
+                    </Button>
+                  )}
+                </Box>
+
                 {/* Modern Title Input */}
                 <TextField
                   label="Post Title"

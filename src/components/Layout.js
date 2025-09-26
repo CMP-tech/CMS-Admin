@@ -156,12 +156,12 @@ const Layout = () => {
       text: "Settings",
       icon: <SettingsIcon />,
       children: [
-        { text: "Social Media", path: "/settings/social-media" },
+        // { text: "Social Media", path: "/settings/social-media" },
         { text: "General", path: "/settings/general" },
         { text: "Reading", path: "/settings/reading" },
         { text: "Privacy", path: "/settings/privacy" },
         { text: "Google Analytics", path: "/settings/google-analytics" },
-        { text: "Copyright", path: "/settings/copyright" },
+        // { text: "Copyright", path: "/settings/copyright" },
       ],
     },
     {

@@ -23,6 +23,7 @@ import {
   CircularProgress,
   Skeleton,
   Backdrop,
+  CardMedia,
 } from "@mui/material";
 import {
   Save as SaveIcon,
@@ -31,6 +32,9 @@ import {
   Close as CloseIcon,
   ArrowBack as ArrowBackIcon,
   Edit as EditIcon,
+  CloudUpload as CloudUploadIcon,
+  Delete as DeleteIcon,
+  Image as ImageIcon,
 } from "@mui/icons-material";
 // Use react-quill-new instead of react-quill
 import ReactQuill from "react-quill-new";
@@ -80,10 +84,21 @@ const apiService = {
     }
   },
 
-  // Update post
+  // Update post with FormData for file upload
   updatePost: async (postId, postData) => {
     try {
-      const response = await axiosInstance.put(`/posts/${postId}`, postData);
+      // Determine if we need FormData (for file uploads) or JSON
+      const isFormData = postData instanceof FormData;
+
+      const response = await axiosInstance.put(`/posts/${postId}`, postData, {
+        headers: isFormData
+          ? {
+              "Content-Type": "multipart/form-data",
+            }
+          : {
+              "Content-Type": "application/json",
+            },
+      });
       return response.data;
     } catch (error) {
       console.error("Error updating post:", error);
@@ -112,6 +127,12 @@ const EditPostPage = () => {
   const [tagInput, setTagInput] = useState("");
   const [currentStatus, setCurrentStatus] = useState("draft");
 
+  // Banner image state
+  const [bannerImage, setBannerImage] = useState(null); // New uploaded file
+  const [bannerImagePreview, setBannerImagePreview] = useState(""); // Preview URL
+  const [existingBannerUrl, setExistingBannerUrl] = useState(""); // Existing banner from API
+  const [removeBannerFlag, setRemoveBannerFlag] = useState(false); // Flag to remove existing banner
+
   // Dynamic data state
   const [categories, setCategories] = useState([]);
   const [languages, setLanguages] = useState([]);
@@ -130,6 +151,7 @@ const EditPostPage = () => {
   });
 
   const tagInputRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   // Fetch all initial data on component mount
   useEffect(() => {
@@ -171,6 +193,12 @@ const EditPostPage = () => {
           setAccessLevel(post.accessLevel || "");
           setTags(post.tags || []);
           setCurrentStatus(post.status || "draft");
+
+          // Handle existing banner image
+          if (post.bannerImage) {
+            console.log("Existing banner image URL:", post.bannerImage);
+            setExistingBannerUrl(post.bannerImage);
+          }
         } else {
           showSnackbar("Failed to load post data. Please try again.", "error");
           setTimeout(() => {
@@ -194,6 +222,15 @@ const EditPostPage = () => {
       navigate("/admin/posts");
     }
   }, [postId, navigate]);
+
+  // Cleanup preview URL on unmount
+  useEffect(() => {
+    return () => {
+      if (bannerImagePreview && bannerImagePreview.startsWith("blob:")) {
+        URL.revokeObjectURL(bannerImagePreview);
+      }
+    };
+  }, [bannerImagePreview]);
 
   const showSnackbar = (message, severity = "success") => {
     setSnackbar({
@@ -226,6 +263,66 @@ const EditPostPage = () => {
     setTags(tags.filter((tag) => tag !== tagToRemove));
   };
 
+  // Banner image handlers
+  const handleBannerImageSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        showSnackbar("Please select a valid image file", "error");
+        return;
+      }
+
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        showSnackbar("Image size should be less than 5MB", "error");
+        return;
+      }
+
+      setBannerImage(file);
+      setRemoveBannerFlag(false); // Reset remove flag since we're adding a new image
+
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file);
+      // Clean up previous preview URL if it exists
+      if (bannerImagePreview && bannerImagePreview.startsWith("blob:")) {
+        URL.revokeObjectURL(bannerImagePreview);
+      }
+      setBannerImagePreview(previewUrl);
+    }
+  };
+
+  const handleRemoveBannerImage = () => {
+    setBannerImage(null);
+
+    // Clean up preview URL if it exists
+    if (bannerImagePreview && bannerImagePreview.startsWith("blob:")) {
+      URL.revokeObjectURL(bannerImagePreview);
+    }
+    setBannerImagePreview("");
+
+    // If there's an existing banner, mark it for removal
+    if (existingBannerUrl) {
+      setRemoveBannerFlag(true);
+    }
+
+    // Clear file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  // Get the current display image (either new preview or existing banner)
+  const getCurrentBannerImage = () => {
+    if (bannerImagePreview) {
+      return bannerImagePreview; // New uploaded image preview
+    }
+    if (existingBannerUrl && !removeBannerFlag) {
+      return existingBannerUrl; // Existing banner from server
+    }
+    return null;
+  };
+
   const validateForm = () => {
     if (!title.trim()) {
       showSnackbar("Please enter a title", "error");
@@ -250,20 +347,61 @@ const EditPostPage = () => {
     return true;
   };
 
+  const createFormData = (newStatus = null) => {
+    const formData = new FormData();
+    formData.append("title", title.trim());
+    formData.append("body", body.trim());
+    formData.append("category", category);
+    formData.append("language", language);
+    formData.append("accessLevel", accessLevel);
+    formData.append("status", newStatus || currentStatus);
+
+    // Append tags
+    tags.forEach((tag, index) => {
+      formData.append(`tags[${index}]`, tag);
+    });
+
+    // Handle banner image
+    if (bannerImage) {
+      // New banner image uploaded
+      formData.append("bannerImage", bannerImage);
+    } else if (removeBannerFlag) {
+      // Flag to remove existing banner
+      formData.append("removeBanner", "true");
+    }
+
+    return formData;
+  };
+
+  const createJsonData = (newStatus = null) => {
+    const postData = {
+      title: title.trim(),
+      body: body.trim(),
+      category,
+      language,
+      accessLevel,
+      tags,
+      status: newStatus || currentStatus,
+    };
+
+    // Only add removeBanner flag if we're removing existing banner
+    if (removeBannerFlag && !bannerImage) {
+      postData.removeBanner = true;
+    }
+
+    return postData;
+  };
+
   const handleUpdate = async (newStatus = null) => {
     if (!validateForm()) return;
 
     setIsSubmitting(true);
     try {
-      const postData = {
-        title: title.trim(),
-        body: body.trim(),
-        category,
-        language,
-        accessLevel,
-        tags,
-        status: newStatus || currentStatus,
-      };
+      // Use FormData if we have a new banner image or need to remove existing banner
+      const hasImageChanges = bannerImage || removeBannerFlag;
+      const postData = hasImageChanges
+        ? createFormData(newStatus)
+        : createJsonData(newStatus);
 
       const response = await apiService.updatePost(postId, postData);
 
@@ -280,6 +418,23 @@ const EditPostPage = () => {
       if (newStatus) {
         setCurrentStatus(newStatus);
       }
+
+      // Update existing banner URL if response contains new banner info
+      if (response.data?.bannerImage) {
+        setExistingBannerUrl(response.data.bannerImage);
+      } else if (removeBannerFlag) {
+        setExistingBannerUrl("");
+      }
+
+      // Reset image-related states after successful update
+      if (bannerImage) {
+        setBannerImage(null);
+        if (bannerImagePreview && bannerImagePreview.startsWith("blob:")) {
+          URL.revokeObjectURL(bannerImagePreview);
+        }
+        setBannerImagePreview("");
+      }
+      setRemoveBannerFlag(false);
 
       // Redirect after a delay
       setTimeout(() => {
@@ -343,6 +498,8 @@ const EditPostPage = () => {
       </Backdrop>
     );
   }
+
+  const currentBannerImage = getCurrentBannerImage();
 
   return (
     <Box
@@ -439,6 +596,137 @@ const EditPostPage = () => {
               }}
             >
               <CardContent sx={{ p: 4 }}>
+                {/* Banner Image Upload Section */}
+                <Box sx={{ mb: 4 }}>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      mb: 2,
+                      fontWeight: 600,
+                      color: "#374151",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                    }}
+                  >
+                    <ImageIcon /> Banner Image
+                  </Typography>
+
+                  {currentBannerImage ? (
+                    <Box sx={{ position: "relative", mb: 2 }}>
+                      <CardMedia
+                        component="img"
+                        sx={{
+                          height: 200,
+                          borderRadius: "12px",
+                          objectFit: "cover",
+                          border: "2px solid #e2e8f0",
+                        }}
+                        image={currentBannerImage?.url}
+                        alt="Banner preview"
+                      />
+                      <IconButton
+                        onClick={handleRemoveBannerImage}
+                        sx={{
+                          position: "absolute",
+                          top: 8,
+                          right: 8,
+                          bgcolor: "rgba(239, 68, 68, 0.9)",
+                          color: "white",
+                          "&:hover": {
+                            bgcolor: "rgba(220, 38, 38, 0.9)",
+                          },
+                          width: 36,
+                          height: 36,
+                        }}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                      {bannerImage && (
+                        <Chip
+                          label="New Image"
+                          color="success"
+                          size="small"
+                          sx={{
+                            position: "absolute",
+                            bottom: 8,
+                            left: 8,
+                            fontWeight: 600,
+                          }}
+                        />
+                      )}
+                    </Box>
+                  ) : (
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        border: "2px dashed #d1d5db",
+                        borderRadius: "12px",
+                        p: 3,
+                        textAlign: "center",
+                        bgcolor: "#f9fafb",
+                        cursor: "pointer",
+                        transition: "all 0.2s ease",
+                        "&:hover": {
+                          borderColor: "#3b82f6",
+                          bgcolor: "#eff6ff",
+                        },
+                      }}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <CloudUploadIcon
+                        sx={{
+                          fontSize: 48,
+                          color: "#9ca3af",
+                          mb: 1,
+                        }}
+                      />
+                      <Typography
+                        variant="body1"
+                        sx={{
+                          color: "#374151",
+                          fontWeight: 500,
+                          mb: 0.5,
+                        }}
+                      >
+                        Click to upload banner image
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: "#6b7280" }}>
+                        Supports JPG, PNG, GIF up to 5MB
+                      </Typography>
+                    </Paper>
+                  )}
+
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleBannerImageSelect}
+                    accept="image/*"
+                    style={{ display: "none" }}
+                  />
+
+                  {!currentBannerImage && (
+                    <Button
+                      variant="outlined"
+                      startIcon={<CloudUploadIcon />}
+                      onClick={() => fileInputRef.current?.click()}
+                      sx={{
+                        mt: 1,
+                        borderRadius: "8px",
+                        textTransform: "none",
+                        borderColor: "#d1d5db",
+                        color: "#374151",
+                        "&:hover": {
+                          borderColor: "#3b82f6",
+                          bgcolor: "#eff6ff",
+                        },
+                      }}
+                    >
+                      Choose Banner Image
+                    </Button>
+                  )}
+                </Box>
+
                 {/* Modern Title Input */}
                 <TextField
                   label="Post Title"

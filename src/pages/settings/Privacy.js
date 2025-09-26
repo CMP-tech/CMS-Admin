@@ -11,6 +11,7 @@ import {
   Container,
   Alert,
   Skeleton,
+  CircularProgress,
 } from "@mui/material";
 import {
   Save as SaveIcon,
@@ -21,11 +22,24 @@ import {
 import { useNavigate } from "react-router-dom";
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
+import axios from "axios";
+import axiosInstance from "../../axiosInstance";
+// Adjust the path to your axios instance
 
 const PrivacyPage = () => {
   const navigate = useNavigate();
 
-  const [content, setContent] = useState(`
+  const [content, setContent] = useState("");
+  const [originalContent, setOriginalContent] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
+  const [hasChanges, setHasChanges] = useState(false);
+
+  // Default content template
+  const defaultContent = `
     <h1>Privacy Policy</h1>
     <p>Last updated: ${new Date().toLocaleDateString()}</p>
     
@@ -49,19 +63,70 @@ const PrivacyPage = () => {
     
     <h2>5. Contact Us</h2>
     <p>If you have any questions about this Privacy Policy, please contact us at privacy@example.com</p>
-  `);
+  `;
 
-  const [originalContent, setOriginalContent] = useState("");
-  const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [hasChanges, setHasChanges] = useState(false);
+  // Fetch privacy policy from backend
+  const fetchPrivacyPolicy = async () => {
+    try {
+      setInitialLoading(true);
+      setError("");
 
+      const response = await axiosInstance.get("/privacy");
+
+      if (response.data && response.data.content) {
+        setContent(response.data.content);
+        setOriginalContent(response.data.content);
+      } else {
+        // No content returned, use default
+        setContent(defaultContent);
+        setOriginalContent(defaultContent);
+      }
+    } catch (error) {
+      console.error("Error fetching privacy policy:", error);
+
+      if (error.response && error.response.status === 404) {
+        // No privacy policy exists yet, use default content
+        setContent(defaultContent);
+        setOriginalContent(defaultContent);
+      } else {
+        setError("Failed to load privacy policy. Using default content.");
+        setContent(defaultContent);
+        setOriginalContent(defaultContent);
+      }
+    } finally {
+      setInitialLoading(false);
+    }
+  };
+
+  // Save privacy policy to backend
+  const savePrivacyPolicy = async (contentToSave) => {
+    try {
+      const response = await axiosInstance.post("/privacy/createOrUpdate", {
+        content: contentToSave,
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error("Error saving privacy policy:", error);
+
+      if (
+        error.response &&
+        error.response.data &&
+        error.response.data.message
+      ) {
+        throw new Error(error.response.data.message);
+      } else {
+        throw new Error("Failed to save privacy policy");
+      }
+    }
+  };
+
+  // Load privacy policy on component mount
   useEffect(() => {
-    // Simulate loading existing content
-    setOriginalContent(content);
+    fetchPrivacyPolicy();
   }, []);
 
+  // Check for changes
   useEffect(() => {
     setHasChanges(content !== originalContent);
   }, [content, originalContent]);
@@ -72,11 +137,12 @@ const PrivacyPage = () => {
 
   const handleSave = async () => {
     setLoading(true);
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+    setError("");
 
-      console.log("Saving privacy policy content...", content);
+    try {
+      const result = await savePrivacyPolicy(content);
+
+      console.log("Privacy policy saved:", result);
       setOriginalContent(content);
       setSuccess(true);
       setIsEditing(false);
@@ -84,6 +150,9 @@ const PrivacyPage = () => {
       setTimeout(() => setSuccess(false), 3000);
     } catch (error) {
       console.error("Error saving content:", error);
+      setError(
+        error.message || "Failed to save privacy policy. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -93,10 +162,12 @@ const PrivacyPage = () => {
     setContent(originalContent);
     setIsEditing(false);
     setHasChanges(false);
+    setError("");
   };
 
   const handleEdit = () => {
     setIsEditing(true);
+    setError("");
   };
 
   // Quill editor modules and formats
@@ -127,6 +198,47 @@ const PrivacyPage = () => {
     "blockquote",
     "code-block",
   ];
+
+  // Loading skeleton for initial load
+  if (initialLoading) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          bgcolor: "#f8fafc",
+        }}
+        p={3}
+      >
+        <Container maxWidth="lg">
+          <Box sx={{ mb: 4 }}>
+            <Skeleton variant="text" width={200} height={40} />
+            <Skeleton variant="text" width={400} height={24} sx={{ mt: 1 }} />
+          </Box>
+          <Paper
+            elevation={0}
+            sx={{
+              borderRadius: "20px",
+              border: "1px solid #e2e8f0",
+              overflow: "hidden",
+            }}
+          >
+            <CardContent sx={{ p: 4 }}>
+              <Skeleton variant="text" width="100%" height={60} />
+              <Skeleton
+                variant="text"
+                width="100%"
+                height={30}
+                sx={{ mt: 2 }}
+              />
+              <Skeleton variant="text" width="80%" height={30} />
+              <Skeleton variant="text" width="90%" height={30} />
+              <Skeleton variant="rectangular" height={200} sx={{ mt: 2 }} />
+            </CardContent>
+          </Paper>
+        </Container>
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -194,6 +306,20 @@ const PrivacyPage = () => {
             }}
           >
             Privacy policy updated successfully!
+          </Alert>
+        )}
+
+        {/* Error Alert */}
+        {error && (
+          <Alert
+            severity="error"
+            sx={{
+              mb: 3,
+              borderRadius: "16px",
+              fontSize: "1rem",
+            }}
+          >
+            {error}
           </Alert>
         )}
 
@@ -384,7 +510,9 @@ const PrivacyPage = () => {
 
                   <Button
                     variant="contained"
-                    startIcon={<SaveIcon />}
+                    startIcon={
+                      loading ? <CircularProgress size={16} /> : <SaveIcon />
+                    }
                     onClick={handleSave}
                     disabled={loading || !hasChanges}
                     sx={{
