@@ -1,8 +1,8 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-  baseURL: "http://localhost:4000/api", // ✅ change for production
-  // baseURL: "https://cms-api-sjto.onrender.com/api", // ✅ change for production
+  // baseURL: "http://localhost:4000/api", // ✅ change for production
+  baseURL: "https://cms-api-sjto.onrender.com/api", // ✅ change for production
   headers: {
     "Content-Type": "application/json",
   },
