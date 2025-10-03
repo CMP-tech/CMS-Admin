@@ -21,6 +21,8 @@ import { ToastContainer } from "react-toastify";
 import EditLanguagePage from "./pages/Languages/EditLanguage";
 import EditCategoryPage from "./pages/Category/EditCategory";
 import EditPostPage from "./pages/Posts/EditPost";
+import MediaLibrary from "./pages/Media/MediaLibrary";
+import UploadMedia from "./pages/Media/UploadMedia";
 
 function App() {
   return (
@@ -56,7 +58,8 @@ function App() {
               path="admin/change-password"
               element={<ChangePasswordPage />}
             />
-
+            <Route path="admin/media/library" element={<MediaLibrary />} />
+            <Route path="admin/media/add" element={<UploadMedia />} />
             {/* Settings */}
             <Route path="settings/general" element={<GeneralSettings />} />
             <Route path="settings/reading" element={<ReadingSettings />} />

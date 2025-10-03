@@ -13,6 +13,9 @@ import TranslateIcon from "@mui/icons-material/Translate";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import LockResetIcon from "@mui/icons-material/LockReset";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import PermMediaIcon from "@mui/icons-material/PermMedia";
+import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
+import AddPhotoAlternateIcon from "@mui/icons-material/AddPhotoAlternate";
 
 import {
   Box,
@@ -149,6 +152,22 @@ const Layout = () => {
           text: "Languages",
           path: "/admin/languages",
           icon: <TranslateIcon />,
+        },
+      ],
+    },
+    {
+      text: "Media",
+      icon: <PermMediaIcon />,
+      children: [
+        {
+          text: "Library",
+          path: "/admin/media/library",
+          icon: <PhotoLibraryIcon />,
+        },
+        {
+          text: "Add Media File",
+          path: "/admin/media/add",
+          icon: <AddPhotoAlternateIcon />,
         },
       ],
     },
